@@ -1,420 +1,357 @@
 # Siemens FLC QC Viewer
 
-Browser-based, single-file tool for **quality control of Siemens flat-panel / FLC images** and **uncompressed DICOM images**.
+Viewer locale e strumento di supporto ai **controlli di qualità (CQ) dei rivelatori digitali Siemens FLC**, sviluppato come singolo file HTML autocontenuto.
 
-The application runs locally in the browser, requires no installation and has no external JavaScript dependencies. It provides image viewing, ROI statistics, batch/range analysis and dedicated workflows for detector quality-control measurements.
+La versione attuale integra visualizzazione delle immagini, gestione delle ROI, analisi su serie di acquisizioni, uniformità, ghost, rinomina guidata delle immagini e raccolta strutturata delle misure in vista della generazione automatica del report.
 
-> Current UI version: **Siemens FLC QC Viewer v12 — DICOM + ROI Range**
-
----
-
-## Main features
-
-- Load Siemens FLC acquisitions as:
-  - `.hdr` + raw image without extension
-  - `.hdr` + `.pp`
-  - combined/raw raster with automatic offset detection
-- Load **uncompressed monochrome DICOM** (`.dcm` / `.dicom`)
-- Automatic detection of:
-  - image matrix
-  - pixel spacing when available
-  - DICOM Window Center / Window Width
-  - Siemens FLC geometry when available in the header
-- Manual **Window / Level**
-- Automatic W/L
-- Image inversion
-- Zoom control
-- Rectangular ROI
-- Elliptical ROI
-- Distance measurement
-- ROI statistics:
-  - number of pixels
-  - area
-  - mean
-  - standard deviation
-  - minimum
-  - maximum
-  - coefficient of variation
-- ROI templates:
-  - save in browser
-  - export to JSON
-  - import from JSON
-  - automatic rescaling when the image matrix changes
-- Batch/range analysis using the same ROI coordinates on multiple images
-- Excel-friendly clipboard export
-- Response-function and reproducibility tables
-- Detector uniformity analysis
-- Bad-pixel search
-- Ghost / latent-image measurement workflow
-- Integrated **“Guida Galattica”** help poster
-- Fully local processing: the application code makes no network requests
+> **Versione:** v19 — Analisi CQ + Dati Report
 
 ---
 
-## Quick start
+## Obiettivo
 
-No build step is required.
+Il progetto nasce per rendere più semplice e riproducibile il flusso di lavoro dei controlli di qualità su immagini Siemens FLC.
 
-1. Download or clone the repository.
-2. Open:
+L'idea è mantenere un'interfaccia utilizzabile anche da operatori non esperti:
 
-```text
-SIEMENS_TLC_CalculatorHDR.html
-```
+1. caricare una singola immagine o una cartella;
+2. verificare e, se necessario, rinominare le acquisizioni;
+3. disegnare o richiamare le ROI;
+4. eseguire le analisi CQ;
+5. copiare i risultati in Excel oppure esportare l'intera sessione in JSON;
+6. in una versione successiva, generare direttamente il report finale.
 
-in a modern browser.
-
-A Chromium-based browser such as **Microsoft Edge** or **Google Chrome** is recommended, especially for folder selection and batch analysis.
-
-The application can be opened directly using `file://`; no web server is required.
+Tutte le elaborazioni vengono eseguite **localmente nel browser**.
 
 ---
 
-## Loading images
+## Funzioni principali
 
-### Siemens FLC
+### Visualizzazione Siemens FLC
 
-For a single acquisition, load the corresponding files together:
-
-```text
-image.hdr
-image
-```
-
-or:
+Supporta acquisizioni costituite da:
 
 ```text
-image.hdr
-image.pp
+file.hdr
+file
+file.pp
 ```
 
-The viewer attempts to read the FLC header, determine image geometry and recover the pixel spacing.
+Il programma gestisce sia il raster senza estensione sia il file `.pp`.
 
-Supported built-in matrix presets include:
+Sono disponibili preset per diverse matrici Siemens, tra cui:
 
-| Preset | Matrix |
-|---|---:|
-| MAX mini | 1920 × 1520 |
-| MAX wi-D | 2350 × 2866 |
-| MAX static | 2868 × 2874 |
-| MAX dynamic RAD | 2840 × 2874 |
-| MAX dynamic FLU Z0 | 880 × 960 |
-| MAX dynamic FLU/DFR Z1/Z3 | 1024 × 1024 |
-| MAX dynamic FLU/DFR Z2 | 768 × 768 |
-| MAX dynamic DFR Z0 | 1320 × 1440 |
-| FLC storage detected | 3072 × 2657 |
+- MAX mini — 1920 × 1520
+- MAX wi-D — 2350 × 2866
+- MAX static — 2868 × 2874
+- MAX dynamic RAD — 2840 × 2874
+- MAX dynamic FLU / DFR
+- FLC storage 3072 × 2657
 
-If the raster geometry does not match a preset, the application also tries to infer a compatible UInt16 matrix from the payload size.
+Quando possibile vengono ricavati automaticamente dall'header:
 
-The raster offset is automatically tested at:
-
-```text
-0 bytes
-10240 bytes
-```
-
-and can also be edited manually.
-
-### DICOM
-
-The built-in DICOM parser currently supports:
-
-- Implicit VR Little Endian
-- Explicit VR Little Endian
-- Explicit VR Big Endian
-- 8-bit and 16-bit pixel data
-- signed and unsigned pixels
-- `MONOCHROME1`
-- `MONOCHROME2`
-
-The viewer reads, when available:
-
-- Rows / Columns
-- Pixel Spacing
-- Window Center / Width
-- modality
-- acquisition date and time
-- manufacturer and model
-- station name
-- kVp
-- exposure time
-- tube current
-- exposure
-- SID
-- Study / Series / SOP identifiers
-
-### DICOM limitations
-
-The current version does **not** decode encapsulated/compressed pixel data.
-
-The following transfer syntaxes therefore require an additional decoder and are explicitly rejected:
-
-- JPEG
-- JPEG-LS
-- JPEG 2000
-- RLE
-
-ROI measurements use the **stored pixel values**. DICOM `Rescale Slope` and `Rescale Intercept` are displayed when present but are **not applied** to ROI statistics.
+- matrice;
+- pixel spacing;
+- data e ora di acquisizione;
+- kVp;
+- mAs;
+- corrente tubo;
+- tempo di esposizione.
 
 ---
 
-## ROI tools
+### Supporto DICOM
 
-Three measurement tools are available.
+Il viewer riconosce anche file DICOM, compresi file privi dell'estensione `.dcm` quando è presente il preambolo DICOM.
 
-### Rectangular ROI
+Sono gestite le transfer syntax non compresse:
 
-Returns:
+- Implicit VR Little Endian;
+- Explicit VR Little Endian;
+- Explicit VR Big Endian.
 
-```text
-N pixels
-Mean
-SD
-Min
-Max
-CV %
-Area [mm²]   (when pixel spacing is known)
-```
+Il parser legge, quando disponibili:
 
-### Elliptical ROI
+- Acquisition Date;
+- Acquisition Time;
+- matrice;
+- pixel spacing;
+- Window Center / Window Width;
+- kVp;
+- Exposure Time;
+- Tube Current;
+- Exposure / mAs;
+- SID;
+- informazioni su apparecchiatura, serie e istanza.
 
-Uses the same statistics while including only pixels inside the ellipse.
+Per i mAs vengono utilizzati, in ordine:
 
-### Distance
+1. **Exposure** `(0018,1152)`;
+2. **Exposure in µAs** `(0018,1153)`, convertito in mAs;
+3. calcolo da `mA × ms / 1000`, se necessario.
 
-Returns:
+### Limite attuale DICOM
 
-```text
-Δx [px]
-Δy [px]
-distance [px]
-distance [mm]   (when pixel spacing is known)
-```
+Non sono ancora decodificate le immagini DICOM compresse:
 
-### ROI editing
-
-A selected ROI can be moved with the mouse or keyboard.
-
-| Command | Action |
-|---|---|
-| Arrow keys | move 1 pixel |
-| Shift + Arrow | move 10 pixels |
-| Ctrl/Cmd + D | duplicate ROI |
-| Delete / Backspace | delete ROI |
+- JPEG;
+- JPEG-LS;
+- JPEG 2000;
+- RLE.
 
 ---
 
-## ROI templates
+## Rinomina guidata delle acquisizioni
 
-ROI layouts can be reused between acquisitions.
+Il pulsante:
 
-Available operations:
-
-- **Save in browser**
-- **Recall**
-- **Export JSON**
-- **Import JSON**
-
-The JSON template stores:
-
-- matrix size
-- pixel spacing
-- ROI type and coordinates
-- normalized ROI coordinates
-
-Normalized coordinates allow a template to be adapted when the new image has a different matrix size.
-
-Example structure:
-
-```json
-{
-  "format": "FLC-QC-ROI",
-  "version": 1,
-  "matrix": {
-    "w": 2840,
-    "h": 2874
-  },
-  "pixelSpacing": {
-    "x": "0.148",
-    "y": "0.148"
-  },
-  "rois": []
-}
+```text
+✎ Rinomina immagini
 ```
 
-> Some browsers may restrict `localStorage` when an HTML file is opened through `file://`. In that case, use **Export JSON / Import JSON**.
+apre una cartella e costruisce una lista ordinata delle esposizioni.
+
+### Logica di ordinamento
+
+Le acquisizioni vengono ordinate per:
+
+```text
+Acquisition Date + Acquisition Time
+```
+
+L'ordine temporale serve a ricostruire la sequenza reale di acquisizione.
+
+La proposta di rinomina, invece, mantiene volutamente la normale abitudine operativa:
+
+```text
+1
+2
+3
+4
+...
+```
+
+L'operatore può modificare liberamente ogni nome prima di applicarlo.
+
+### Informazioni mostrate
+
+Per ogni esposizione vengono visualizzati:
+
+- numero progressivo;
+- anteprima dell'immagine;
+- data e ora di acquisizione;
+- kVp;
+- mAs;
+- nome originale;
+- componenti disponibili: HDR, RAW, PP oppure DICOM;
+- nuovo nome proposto.
+
+kVp e mAs sono particolarmente utili per riconoscere:
+
+- acquisizioni ripetute;
+- esposizioni fuori sequenza;
+- misure effettuate con tempi o carichi differenti.
+
+### Gruppi Siemens
+
+Una esposizione Siemens viene trattata come un unico oggetto logico.
+
+La rinomina viene quindi applicata insieme a:
+
+```text
+1.hdr
+1
+1.pp
+```
+
+In questo modo i tre componenti della stessa acquisizione mantengono sempre lo stesso nome base.
+
+### Sicurezza della rinomina
+
+Prima di scrivere i nuovi nomi vengono verificati:
+
+- nomi duplicati;
+- caratteri non validi;
+- nomi riservati da Windows;
+- collisioni con file già presenti nella cartella.
+
+La rinomina viene eseguita in due fasi:
+
+1. ogni file viene spostato temporaneamente a un nome `.__flcqc_*`;
+2. i file temporanei vengono rinominati con il nome definitivo.
+
+Questo permette di gestire anche scambi di nome e collisioni intermedie senza sovrascrivere direttamente i file originali.
+
+> La rinomina diretta della cartella richiede un browser Chromium recente, ad esempio **Microsoft Edge** o **Google Chrome**, con supporto alla File System Access API.
 
 ---
 
-## Batch and range analysis
+## ROI
 
-Use **Carica cartella / range** to load a sequence of acquisitions.
+Sono disponibili tre strumenti:
 
-For Siemens FLC data, choose the expected pairing mode:
+- ROI rettangolare;
+- ROI circolare / ellittica;
+- misura lineare.
+
+Per ciascuna ROI di misura vengono calcolati:
+
+- numero di pixel;
+- area, quando è noto il pixel spacing;
+- media;
+- deviazione standard;
+- minimo;
+- massimo;
+- coefficiente di variazione.
+
+### Gestione delle ROI
+
+Le ROI possono essere:
+
+- selezionate;
+- trascinate;
+- duplicate;
+- eliminate;
+- spostate con la tastiera.
+
+Scorciatoie:
 
 ```text
-.hdr + file without extension
+Frecce          spostamento di 1 pixel
+Shift + Frecce  spostamento di 10 pixel
+Ctrl/Cmd + D    duplica ROI
+Canc/Backspace  elimina ROI
 ```
-
-or:
-
-```text
-.hdr + .pp
-```
-
-A folder containing uncompressed DICOM files can also be loaded as a series.
-
-After loading:
-
-1. choose the first and last image of the range;
-2. press **Applica range**;
-3. draw one or more ROIs;
-4. press **Analizza range**.
-
-The same ROI coordinates are measured on every image in the selected range.
-
-For each ROI the table reports:
-
-```text
-image number
-area
-mean
-standard deviation
-minimum
-maximum
-```
-
-The data can be copied directly as tab-separated values for Excel.
-
-### QC shortcuts
-
-The current workflow provides dedicated copy commands for:
-
-- **Response function:** images 1–6
-- **Reproducibility:** images 7–8
-
-These image numbers reflect the current QC workflow and can be changed in the source code if a different acquisition protocol is used.
 
 ---
 
-## Response function and reproducibility
+## Template ROI
 
-A selected ROI can be added manually to the QC tables together with the entered dose.
+Un set di ROI può essere:
 
-Stored values are:
+- salvato nel browser;
+- richiamato successivamente;
+- esportato in JSON;
+- importato da JSON.
 
-| Field |
-|---|
-| Dose [µGy] |
-| Image number |
-| Area |
-| Mean |
-| Standard deviation |
-| Minimum |
-| Maximum |
+Il template conserva anche:
 
----
+- matrice di riferimento;
+- pixel spacing;
+- coordinate normalizzate.
 
-## Detector uniformity
-
-The uniformity workflow is designed around the current AIFM-style acquisition procedure implemented in the application.
-
-Default parameters:
-
-```text
-ROI side: 30 mm
-ROI step: 15 mm
-Image margin: 60 mm
-```
-
-The margin and ROI size can be edited from the interface.
-
-The guided workflow asks for two images, defaulting to:
-
-```text
-2.5 mGy  → image 2
-10 mGy   → image 4
-```
-
-For each dose the application calculates:
-
-- `NULS`
-- `NUGS`
-- `NULSNR`
-- `NUGSNR`
-
-### Global non-uniformity
-
-For a matrix of local ROI values:
-
-```text
-NUGS = (max - min) / ((max + min) / 2)
-```
-
-### Local non-uniformity
-
-The local metric is the maximum relative difference between horizontally or vertically adjacent ROIs:
-
-```text
-NULS = max( |v - v_neighbour| / v )
-```
-
-The same calculation is applied to the ROI SNR matrix to obtain `NULSNR` and `NUGSNR`.
-
-The resulting values can be copied directly to Excel.
+Questo consente di riadattare le ROI quando la matrice dell'immagine cambia.
 
 ---
 
-## Bad-pixel search
+# Analisi CQ
 
-The bad-pixel analysis is run on the first image selected for the uniformity test.
-
-The current implementation reproduces the low-threshold logic used by the reference ImageJ macro:
+Le funzioni di analisi sono raccolte in un unico pannello:
 
 ```text
-threshold = mean - 7 × SD
+Analisi CQ — scegli cosa devi fare
 ```
 
-Pixels satisfying:
-
-```text
-pixel value <= threshold
-```
-
-inside the internal detector ROI are counted as bad pixels.
-
-The interface reports:
-
-- ROI size
-- mean
-- SD
-- threshold
-- minimum
-- maximum
-- number of detected bad pixels
-- coordinates and values of detected pixels
-
-Only the **low-value threshold** is currently implemented.
+La versione attuale contiene tre gruppi principali.
 
 ---
 
-## Ghost / latent-image workflow
+## 1. ROI sul range
 
-The Ghost tool uses two measurement ROIs and two user-selected images:
+Le ROI correnti vengono applicate automaticamente a tutte le immagini comprese nel range selezionato.
 
-1. irradiated / high-contrast image
-2. dark / minimum-load image
-
-Default image numbers are:
+Per ogni coppia:
 
 ```text
-irradiated: 9
-dark:       10
+immagine × ROI
 ```
 
-but both can be changed before the analysis.
+vengono registrati:
 
-The first two measurement ROIs are reused at the same coordinates on both images, producing four measurement rows:
+- area;
+- numero di pixel;
+- media;
+- deviazione standard;
+- minimo;
+- massimo;
+- coefficiente di variazione.
+
+I risultati vengono mostrati in tabella.
+
+### Copia per Excel
+
+Per ciascuna ROI sono disponibili:
+
+```text
+Copia 1–6 per Excel
+Copia 7–8 per Excel
+Copia tutto
+```
+
+I dati vengono copiati in formato TSV, quindi possono essere incollati direttamente in Excel.
+
+---
+
+## 2. Non uniformità DR
+
+Il modulo esegue il calcolo guidato della non uniformità sulle immagini selezionate.
+
+Impostazioni disponibili:
+
+- margine della zona analizzata;
+- lato delle ROI;
+- immagini da associare ai livelli di esposizione.
+
+La procedura propone normalmente:
+
+```text
+2,5 mGy
+10 mGy
+```
+
+e calcola gli indici:
+
+- NULS;
+- NUGS;
+- NULSNR;
+- NUGSNR.
+
+### Bad pixel
+
+Sulla prima immagine utilizzata per l'analisi di uniformità viene eseguita anche la ricerca dei bad pixel.
+
+Vengono conservati:
+
+- immagine analizzata;
+- media;
+- deviazione standard;
+- soglia;
+- minimo;
+- massimo;
+- numero di bad pixel;
+- coordinate dei pixel individuati.
+
+I risultati dell'uniformità possono essere copiati per Excel.
+
+---
+
+## 3. Ghost / immagini latenti
+
+Per il calcolo del ghost sono necessarie due ROI definite sull'immagine irradiata:
+
+```text
+ROI 1 → zona con piombo
+ROI 2 → zona fuori dal piombo
+```
+
+Le stesse coordinate vengono quindi utilizzate anche sull'immagine buia.
+
+L'utente sceglie:
+
+- immagine irradiata;
+- immagine buia / minimo carico.
+
+Il programma misura automaticamente le quattro combinazioni:
 
 ```text
 ROI1immIRR
@@ -423,183 +360,309 @@ ROI3immIRR
 ROI4immBuio
 ```
 
-For each row the tool extracts:
+Per ciascuna vengono riportati:
+
+- numero immagine;
+- area;
+- media;
+- deviazione standard;
+- minimo;
+- massimo.
+
+È disponibile il comando:
 
 ```text
-image number
-area
-mean
-standard deviation
-minimum
-maximum
+Copia per Excel
 ```
 
-The four rows can be copied directly to Excel.
-
-> The current implementation extracts the four ROI measurements needed by the workflow; it does not calculate an additional final ghost index inside the browser.
-
 ---
 
-## Siemens FLC header handling
+# Dati della sessione
 
-For compatible FLC headers, the viewer attempts to extract acquisition and image information including:
+La v19 introduce una struttura dati unica pensata come base del futuro generatore di report.
 
-- date
-- time
-- protocol
-- anatomy code
-- processing fields
-- detector / RF identifiers
-- serial information
-- UID strings
-- matrix dimensions
-- pixel pitch
-
-The FLC geometry block is checked for internal consistency before it is accepted.
-
-Some semantic header fields are intentionally marked in the interface as **still requiring confirmation across additional acquisitions**.
-
----
-
-## Privacy and data handling
-
-The application is self-contained.
-
-- image files are read with browser file APIs;
-- calculations run in JavaScript in the local browser session;
-- the application source contains no `fetch`, XHR or WebSocket network calls;
-- no image is intentionally uploaded by the application;
-- the embedded guide is stored directly inside the HTML file.
-
-Clipboard export and optional browser `localStorage` are the only browser-side persistence/convenience mechanisms used by the current version.
-
-This makes the tool suitable for workflows in which QC images should remain on the local workstation, subject to the security policies of the institution and browser in use.
-
----
-
-## Known limitations
-
-- Compressed DICOM is not supported.
-- DICOM color images are not supported.
-- DICOM ROI statistics use stored pixel values; rescale slope/intercept are not applied.
-- Folder DICOM series are ordered by their filename/path rather than by a complete DICOM series-management layer.
-- The current UI does not provide a dedicated multi-frame DICOM frame navigator.
-- Siemens proprietary header parsing is based on the currently identified FLC layout and should be validated on additional system/software versions.
-- QC results should be checked against the acquisition protocol and institutional reference implementation before being used operationally.
-- Browser permissions may affect clipboard access and `localStorage` when running from `file://`.
-
----
-
-## Suggested QC workflow
+Lo schema interno è identificato come:
 
 ```text
-Load images
-    ↓
-Verify matrix and pixel spacing
-    ↓
-Check Window / Level
-    ↓
-Draw or import ROI template
-    ↓
-Analyze range
-    ↓
-Copy response / reproducibility data
-    ↓
-Run uniformity + bad-pixel analysis
-    ↓
-Run Ghost measurements
-    ↓
-Paste results into the QC spreadsheet
+FLC-QC-SESSION
 ```
 
-The integrated **🚀 GUIDA GALATTICA** button provides an in-application visual overview of the workflow.
+e raccoglie progressivamente il lavoro eseguito durante la sessione.
 
----
-
-## Project structure
-
-A minimal repository can simply contain:
+Struttura concettuale:
 
 ```text
-.
-├── SIEMENS_TLC_CalculatorHDR.html
-└── README.md
+sessione
+├── sorgente
+│   ├── tipo
+│   ├── range
+│   ├── matrice
+│   └── pixel spacing
+│
+├── acquisizioni
+│   ├── numero immagine
+│   ├── file
+│   ├── HDR
+│   ├── data acquisizione
+│   ├── ora acquisizione
+│   └── tecnica
+│       ├── kVp
+│       ├── mAs
+│       ├── mA
+│       └── ms
+│
+├── ROI
+│   ├── nome
+│   ├── tipo
+│   └── geometria
+│
+├── misure
+│   ├── ROI sul range
+│   ├── uniformità
+│   ├── bad pixel
+│   └── ghost
+│
+└── esportazioni
 ```
 
-No package manager, compiler or external assets are required.
+La sessione viene aggiornata automaticamente quando vengono eseguite le analisi.
+
+Caricando una nuova serie viene inizializzata una nuova sessione, evitando di mescolare i risultati di controlli differenti.
 
 ---
 
-## Development notes
+## Esportazione dei dati
 
-The application is intentionally distributed as a **single HTML file** containing:
+Nel pannello **Dati sessione / report** sono disponibili due comandi.
 
-- HTML interface
-- CSS
-- JavaScript
-- DICOM parser
-- Siemens FLC parser
-- ROI/QC calculation logic
-- embedded help image
+### Copia tutte le misure per Excel
 
-This keeps deployment simple on QC workstations and makes the tool usable without internet access.
-
-If the project grows, possible future refactoring could separate:
+Genera un unico blocco TSV contenente, quando presenti:
 
 ```text
-src/
-  dicom.js
-  flc.js
-  roi.js
-  qc.js
-  ui.js
+ROI SUL RANGE
+NON UNIFORMITA
+BAD PIXEL
+GHOST
 ```
 
-while retaining a compiled standalone HTML release for clinical-physics workstations.
+Il testo può essere incollato direttamente in Excel.
 
----
+### Esporta dati JSON
 
-## Validation
-
-This software is a technical QC utility and should be validated locally against:
-
-- known reference images;
-- the existing spreadsheet or ImageJ workflow;
-- expected ROI statistics;
-- detector-specific acceptance criteria;
-- the institution's quality-control procedure.
-
-Automated regression tests using anonymized reference images would be a useful next step.
-
----
-
-## Contributing
-
-Issues and pull requests are welcome for:
-
-- additional Siemens FLC variants;
-- DICOM compatibility improvements;
-- QC calculation validation;
-- UI improvements;
-- export formats;
-- automated tests.
-
-When reporting a parsing problem, include where possible:
+Genera:
 
 ```text
-browser/version
-file type
-image matrix
-transfer syntax (for DICOM)
-expected result
-observed result
+FLC_QC_sessione.json
 ```
 
-Avoid uploading identifiable patient images to public issues.
+contenente l'intera struttura dati della sessione.
+
+Questo JSON è pensato anche come interfaccia fra:
+
+```text
+analisi delle immagini
+        ↓
+dati strutturati
+        ↓
+generazione del report
+```
 
 ---
 
-## Disclaimer
+## Flusso di lavoro consigliato
 
-This project is intended as a **quality-control and technical analysis tool**. It is not a diagnostic DICOM viewer and is not a substitute for validated institutional QC procedures, manufacturer software or applicable regulations.
+### 1. Aprire la cartella
 
+Usare:
+
+```text
+▣ Carica cartella / range
+```
+
+oppure, quando serve prima sistemare i nomi:
+
+```text
+✎ Rinomina immagini
+```
+
+### 2. Verificare l'ordine
+
+Controllare:
+
+- Acquisition Date/Time;
+- kVp;
+- mAs;
+- anteprima.
+
+Eventuali ripetizioni diventano così immediatamente riconoscibili.
+
+### 3. Selezionare il range
+
+Impostare:
+
+```text
+Da slice
+A slice
+```
+
+e premere **Applica range**.
+
+### 4. Preparare le ROI
+
+Disegnare le ROI oppure richiamare un template precedentemente salvato.
+
+### 5. Eseguire l'analisi
+
+Dal pannello **Analisi CQ** scegliere:
+
+- ROI sul range;
+- Non uniformità DR;
+- Ghost.
+
+### 6. Esportare
+
+A seconda del flusso di lavoro:
+
+- copiare i singoli blocchi in Excel;
+- copiare tutte le misure;
+- esportare la sessione JSON.
+
+---
+
+## Privacy e funzionamento locale
+
+Il programma è un singolo file HTML.
+
+Non richiede:
+
+- server;
+- database;
+- installazione;
+- upload delle immagini;
+- connessione a servizi esterni per l'analisi.
+
+I file radiologici vengono letti localmente dal browser.
+
+Questo approccio è particolarmente utile per dati tecnici o sanitari che non devono essere inviati a servizi remoti.
+
+---
+
+## Avvio
+
+Non è necessaria una procedura di installazione.
+
+1. scaricare il file HTML;
+2. aprirlo con un browser moderno;
+3. caricare una singola immagine o una cartella.
+
+Per la funzione di **rinomina diretta dei file** utilizzare preferibilmente:
+
+- Microsoft Edge;
+- Google Chrome.
+
+---
+
+## Struttura del progetto
+
+Attualmente il progetto è volutamente distribuito come **single-file application**:
+
+```text
+SIEMENS_TLC_CalculatorHDR_v19_DatiReport_Excel.html
+```
+
+HTML, CSS, JavaScript e risorse dell'interfaccia sono incorporati nello stesso file.
+
+Vantaggi:
+
+- distribuzione semplice;
+- nessuna dipendenza da installare;
+- utilizzo offline;
+- facile archiviazione insieme alla documentazione CQ.
+
+---
+
+## Stato del progetto
+
+### Implementato
+
+- [x] Visualizzazione Siemens FLC
+- [x] Visualizzazione DICOM non compresso
+- [x] Lettura automatica matrice e pixel spacing quando disponibili
+- [x] Lettura Acquisition Date/Time
+- [x] Lettura kVp e mAs
+- [x] Anteprima delle acquisizioni
+- [x] Ordinamento temporale
+- [x] Rinomina guidata `1, 2, 3…`
+- [x] Gestione coordinata HDR + RAW + PP
+- [x] ROI rettangolari e circolari
+- [x] Template ROI
+- [x] Analisi ROI sul range
+- [x] Copia dati per Excel
+- [x] Non uniformità DR
+- [x] Ricerca bad pixel
+- [x] Ghost / immagini latenti
+- [x] Struttura dati `FLC-QC-SESSION`
+- [x] Export JSON della sessione
+
+### Roadmap
+
+- [ ] Generazione automatica del report CQ
+- [ ] Inserimento dei dati identificativi dell'apparecchiatura nel report
+- [ ] Riepilogo automatico delle acquisizioni utilizzate
+- [ ] Tabelle e risultati formattati automaticamente
+- [ ] Esportazione del report in formato stampabile
+- [ ] Eventuale supporto ai DICOM compressi
+- [ ] Ulteriore semplificazione del flusso guidato
+
+---
+
+## Note sul formato Siemens FLC
+
+La lettura di alcuni parametri tecnici Siemens FLC utilizza informazioni presenti nell'header proprietario `FLC_V7`.
+
+Il parser applica controlli di plausibilità sui valori ricavati, in particolare per:
+
+- kVp;
+- tempo di esposizione;
+- mAs;
+- corrente ricostruita.
+
+Poiché il formato è proprietario, nuovi layout o revisioni dell'header Siemens potrebbero richiedere ulteriori verifiche.
+
+Per questo motivo i parametri mostrati dal programma devono essere sempre confrontati con il contesto dell'acquisizione quando vengono utilizzati per attività di controllo qualità.
+
+---
+
+## Uso previsto
+
+Questo software è uno strumento di supporto al controllo di qualità e all'organizzazione delle misure.
+
+Non sostituisce:
+
+- le procedure aziendali;
+- i protocolli di controllo qualità applicabili;
+- la valutazione professionale del fisico medico;
+- la verifica dei risultati prima della loro registrazione ufficiale.
+
+---
+
+## Sviluppo
+
+Il progetto è in evoluzione.
+
+La v19 segna il passaggio da un semplice viewer/strumento di misura a una struttura più completa:
+
+```text
+ACQUISIZIONE
+     ↓
+VERIFICA E RINOMINA
+     ↓
+ANALISI
+     ↓
+DATI STRUTTURATI
+     ↓
+REPORT
+```
+
+Il prossimo obiettivo è utilizzare direttamente `FLC-QC-SESSION` per produrre il report finale, evitando di ricalcolare o ricostruire manualmente i risultati già ottenuti durante la sessione.
