@@ -30,6 +30,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.32;ba
 .qcTables{padding:12px 14px 28px;background:#070c17;border-top:1px solid var(--line)}.qcTables h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#d9eaff;margin:8px 0 12px}.tableGrid{display:grid;grid-template-columns:1fr;gap:14px}.qctable{width:100%;border-collapse:collapse;font-size:12px;background:rgba(11,18,32,.72);border:1px solid var(--line);border-radius:12px;overflow:hidden}.qctable caption{text-align:left;font-weight:800;padding:9px 10px;color:#dcecff;background:rgba(21,34,55,.9)}.qctable th,.qctable td{border:1px solid rgba(129,173,233,.16);padding:7px 8px;text-align:right}.qctable th{background:rgba(30,48,75,.82);color:#cfe5ff}.qctable td:first-child,.qctable th:first-child{text-align:left}.qctable .result{background:rgba(255,194,71,.12);color:#ffe0a0}.qctable input{width:78px;padding:4px 6px}.uniformResult{display:grid;grid-template-columns:repeat(4,minmax(100px,1fr));gap:8px;margin-top:10px}.uniformResult .roiMetricCard{min-height:66px}.mutedCell{color:var(--muted);text-align:center!important}
 .doseModal{position:fixed;inset:0;background:rgba(2,7,15,.82);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:9999}
 .doseModal.show{display:flex}.doseDialog{width:min(520px,92vw);background:linear-gradient(180deg,#111c31,#09111f);border:1px solid #31577d;border-radius:18px;padding:20px;box-shadow:0 25px 80px rgba(0,0,0,.55)}
+.doseLbl{text-transform:none!important;letter-spacing:normal!important;font-size:12px!important}
 .doseDialog h3{margin:0 0 6px;color:#e7f5ff}.doseGrid{display:grid;grid-template-columns:1fr 110px;gap:10px;align-items:center;margin:16px 0}.doseGrid input{width:100%;box-sizing:border-box}.doseActions{display:flex;justify-content:flex-end;gap:8px}
 .badPixelCard{margin-top:10px;padding:10px;border:1px solid rgba(90,220,255,.28);border-radius:12px;background:rgba(5,18,31,.72)}.badPixelCard b{color:#67e8ff}.badPixelList{max-height:130px;overflow:auto;font-family:monospace;font-size:11px;color:#a9bed6;margin-top:6px}
 @media(max-width:900px){.uniformResult{grid-template-columns:repeat(2,1fr)}.batchbar input[type=range]{width:180px}}
@@ -77,9 +78,456 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.32;ba
 .analysisHub .uniformResult{grid-template-columns:repeat(2,minmax(90px,1fr))}
 .analysisHint{margin-top:7px;font-size:10px;color:#8295ae}
 @media(max-width:900px){.analysisSection{padding-left:42px}.analysisHub .uniformResult{grid-template-columns:repeat(2,1fr)}}
+/* ---- Report CQ (riproduzione foglio Report Excel) ---- */
+.reportModal{position:fixed;inset:0;z-index:80;display:none;background:rgba(3,6,14,.82);backdrop-filter:blur(3px)}
+.reportModal.show{display:flex;flex-direction:column}
+.reportShell{margin:auto;width:min(880px,96vw);height:96vh;display:flex;flex-direction:column;background:#0b1120;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+.reportToolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:rgba(20,28,49,.7)}
+.reportToolbarTitle{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9fdfff}
+.reportToolbarActions{display:flex;gap:6px}
+.reportSheet{flex:1;overflow:auto;padding:22px;background:#3a4457}
+/* pagina A4 chiara e stampabile */
+.rpPage{max-width:780px;margin:0 auto;background:#fff;color:#111;padding:26px 32px;border-radius:4px;box-shadow:0 6px 26px rgba(0,0,0,.4);font:12px/1.45 'Segoe UI',system-ui,sans-serif}
+.rpTitle{text-align:center;font-size:15px;font-weight:800;letter-spacing:.02em;margin:0 0 2px;color:#0b3a63}
+.rpSub{text-align:center;font-size:12px;color:#2c5d86;margin:0 0 14px;font-weight:600}
+.rpSec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#0b3a63;margin:16px 0 6px;padding:4px 8px;background:#e8f1fb;border-left:4px solid #2c74b3;border-radius:2px}
+.rpKV{display:grid;grid-template-columns:190px minmax(0,1fr);gap:2px 8px;margin:4px 0;align-items:start}
+.rpKV>div{padding:2px 0;min-width:0}
+.rpKV .k{color:#334;font-weight:600}
+.rpEditable{background:#eafbe0;border:1px solid #b9e39a;border-radius:3px;padding:1px 5px;min-width:60px;max-width:100%;display:inline-block;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;vertical-align:top;line-height:1.4}
+.rpEditable:focus{outline:2px solid #6fbf3e;background:#fff}
+/* le note lunghe occupano tutta la larghezza disponibile e vanno a capo */
+.rpKV>div:nth-child(even) .rpEditable{display:block;width:100%}
+table.rpT{border-collapse:collapse;width:100%;margin:6px 0;font-size:11px}
+table.rpT th,table.rpT td{border:1px solid #b9c6d6;padding:3px 6px;text-align:center}
+table.rpT th{background:#dcebf7;color:#0b3a63;font-weight:700}
+table.rpT td.lbl{text-align:left;font-weight:600;background:#f4f8fc}
+.rpCalc{background:#fff6de}
+.rpOk{color:#1a7d33;font-weight:700}.rpBad{color:#c0392b;font-weight:700}
+/* Formattazione condizionale valori con soglia */
+.rpVal-ok{color:#1a7d33;font-weight:700}
+.rpVal-warn{color:#b5730a;font-weight:700}
+.rpVal-bad{color:#c0392b;font-weight:800}
+td.rpVal-ok{background:#eefbf0}td.rpVal-warn{background:#fdf6e3}td.rpVal-bad{background:#fdeceb}
+.rpNote{font-size:10.5px;color:#555;margin:4px 0}
+.rpChoice{display:inline-flex;gap:14px;flex-wrap:wrap;margin:4px 0}
+.rpChoice label{display:inline-flex;gap:5px;align-items:center;font-weight:600}
+.rpSign{margin-top:34px;display:flex;justify-content:flex-end}
+.rpSign .sign{width:270px}
+.rpSign .signName{min-height:22px;text-align:center;font-size:12px;color:#111;padding:2px 6px}
+.rpSign .line{border-top:1px solid #333;padding-top:4px;width:270px;text-align:center;font-size:11px;color:#333}
+.rpCharts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0 4px}
+@media(max-width:640px){.rpCharts{grid-template-columns:1fr}}
+.rpChartBox{border:1px solid #c3d3e4;border-radius:5px;padding:8px;background:#fbfdff}
+.rpChartTitle{font-size:10.5px;font-weight:700;color:#0b3a63;text-align:center;margin-bottom:4px}
+.rpChartEq{font-size:10px;color:#555;text-align:center;margin-top:4px}
+.rpChartEmpty{font-size:11px;color:#999;text-align:center;padding:40px 0}
+svg.rpChart{width:100%;height:auto;display:block}
+svg.rpChart .rpPlot{fill:#fff;stroke:#b9c6d6}
+svg.rpChart .rpGrid{stroke:#e7eef6;stroke-width:1}
+svg.rpChart .rpFit{fill:none;stroke:#c0392b;stroke-width:1.8}
+svg.rpChart .rpDot{fill:#2c74b3;stroke:#0b3a63;stroke-width:.7}
+svg.rpChart .rpTick{font-size:8px;fill:#667}
+svg.rpChart .rpAxis{font-size:9px;fill:#334;font-weight:600}
+.rpBox{display:inline-flex;gap:5px;align-items:center;font-size:11.5px;color:#222;font-weight:600}
+.rpBoxMark{font-size:15px;line-height:1;color:#0b3a63}
+/* Semaforo esito in cima al report */
+.rpSummary{border:1px solid #c3d3e4;border-radius:8px;padding:12px 14px;margin:12px 0 6px;background:#f7fafd}
+.rpSum-ok{border-left:5px solid #2a9d3f;background:#f1fbf3}
+.rpSum-warn{border-left:5px solid #d9a520;background:#fdf9ec}
+.rpSum-partial{border-left:5px solid #2c74b3;background:#f1f7fc}
+.rpSum-na{border-left:5px solid #99a}
+.rpSummaryHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.rpSummaryTitle{font-weight:800;color:#0b3a63;font-size:13px}
+.rpSummaryBadge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;color:#fff}
+.rpBadge-ok{background:#2a9d3f}.rpBadge-warn{background:#d9a520}.rpBadge-partial{background:#2c74b3}.rpBadge-na{background:#8892a0}
+.rpSummaryGrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px}
+@media(max-width:560px){.rpSummaryGrid{grid-template-columns:1fr}}
+.rpSummaryItem{display:flex;align-items:center;gap:7px;font-size:11px;color:#243}
+.rpSumLbl{flex:1;color:#334}.rpSumSt{font-size:10px;color:#667;font-weight:700}
+.rpLed{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.12) inset}
+.rpLed-ok{background:#2ecc55}.rpLed-warn{background:#f2c012}.rpLed-na{background:#c3ccd6}
+.rpSummaryNote{font-size:10px;color:#667;margin-top:8px;line-height:1.5}
+/* Tooltip grafici interattivi */
+.rpTip{position:absolute;z-index:5;pointer-events:none;background:#0b1a2c;color:#eaf6ff;font-size:10.5px;line-height:1.4;padding:5px 8px;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.35);transform:translateY(-100%);white-space:nowrap}
+svg.rpChart .rpDot{cursor:pointer;transition:r .1s}
+svg.rpChart .rpDot:hover{r:5;fill:#e8503a}
+svg.rpChart{cursor:crosshair}
+@media print{
+ /* Stampa SOLO il report inline (Step 3). Tutto il resto è nascosto. */
+ html,body{height:auto!important;overflow:visible!important;background:#fff!important}
+ body>*{display:none!important}
+ body .reportInline{display:block!important;position:static!important;max-width:none!important;margin:0!important;padding:0!important}
+ .reportToolbar,.wizardBar,.wizNav,.reportExtra{display:none!important}
+ .reportInline .reportSheet{display:block!important;overflow:visible!important;padding:0!important;background:#fff!important;border:0!important}
+ .rpPage{box-shadow:none!important;max-width:none!important;margin:0!important;padding:8mm 10mm!important}
+ .rpEditable{background:transparent!important;border:0!important;padding:0!important}
+ .rpSec{break-inside:avoid}
+ table.rpT,.rpCharts,.rpSummary{break-inside:avoid}
+}
 .reportDataBox{margin-top:12px;padding:11px;border:1px solid rgba(99,230,255,.18);border-radius:12px;background:rgba(7,18,30,.55)}.reportDataHead{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}.reportDataTitle{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9fdfff}.reportDataStatus{font:10px/1.4 'JetBrains Mono',Consolas,monospace;color:var(--muted)}.reportDataActions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.copyGroupBtn{white-space:nowrap}
-</style></head><body>
-<div class="top">
+/* ---- Wizard a 3 step ---- */
+.wizardBar{position:sticky;top:0;z-index:40;display:flex;gap:10px;align-items:stretch;padding:10px 14px;background:linear-gradient(180deg,#0a1122,#0a0f1e);border-bottom:1px solid var(--line);box-shadow:0 4px 18px rgba(0,0,0,.35)}
+.wizStep{flex:1;display:flex;gap:11px;align-items:center;padding:9px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(15,23,42,.6);cursor:pointer;transition:.15s;min-width:0}
+.wizStep:hover{border-color:rgba(99,230,255,.5)}
+.wizStep.active{background:linear-gradient(135deg,rgba(99,230,255,.16),rgba(117,150,255,.12));border-color:var(--cyan);box-shadow:0 0 0 1px rgba(99,230,255,.3) inset}
+.wizNum{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:rgba(99,230,255,.14);color:var(--cyan);border:1px solid rgba(99,230,255,.4)}
+.wizStep.active .wizNum{background:var(--cyan);color:#04121c}
+.wizStep.done .wizNum{background:var(--good);color:#04121c;border-color:var(--good)}
+.wizTxt{min-width:0}
+.wizTitle{font-size:12px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wizSub{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wizNav{display:flex;justify-content:space-between;gap:10px;padding:12px 16px;border-top:1px solid var(--line);background:rgba(10,15,30,.6)}
+body.step-1 .stepHideAcq,body.step-3 .stepHideAcq{display:none!important}
+body:not(.step-2) .step2only{display:none!important}
+body:not(.step-1) .step1only{display:none!important}
+body:not(.step-3) .step3only{display:none!important}
+/* Lo Step 2 è il viewer a viewport fisso; gli Step 1 e 3 devono scrollare */
+body.step-1,body.step-3{overflow:auto!important}
+body.step-1 .wizardBar,body.step-3 .wizardBar{position:sticky}
+.acqActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+/* Step 2: la pagina può scorrere e il visualizzatore ha un'altezza propria
+   invece del vecchio calc(100vh - 88px) che si rompeva con la wizardBar. */
+body.step-2{overflow:auto!important;height:auto!important}
+body.step-2 .main{height:auto!important;min-height:70vh}
+body.step-2 #wrap{min-height:70vh}
+/* La griglia decorativa a posizione fissa (top:88px) creava disallineamenti: disattivata */
+#wrap:before{display:none!important}
+/* Step 1 · scheda acquisizione dati (guida operatore + celle verdi/gialle) */
+.acqWrap{max-width:1080px;margin:16px auto;padding:0 16px 40px}
+.acqIntro{background:rgba(12,20,38,.7);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+.acqIntro h2{margin:0 0 6px;font-size:16px;color:var(--cyan)}
+.acqGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:860px){.acqGrid{grid-template-columns:1fr}}
+.acqCard{background:rgba(12,20,38,.7);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.acqCard h3{margin:0 0 10px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#9fdfff;border-bottom:1px solid var(--line);padding-bottom:7px}
+.acqField{display:grid;grid-template-columns:150px 1fr;gap:6px 10px;align-items:center;margin:6px 0}
+.acqField>label{font-size:11px;color:var(--muted)}
+.acqField input,.acqField select,.acqField textarea{width:100%;background:rgba(6,12,24,.8);border:1px solid rgba(124,245,189,.35);color:var(--text);border-radius:7px;padding:6px 8px;font:12px/1.3 inherit}
+.acqField input:focus,.acqField select:focus,.acqField textarea:focus{outline:2px solid var(--good);border-color:var(--good)}
+.acqSteps{counter-reset:acqc;margin:4px 0 0;padding:0;list-style:none}
+.acqSteps li{position:relative;padding:6px 6px 6px 30px;font-size:11.5px;color:var(--text);border-bottom:1px dashed rgba(130,177,255,.12)}
+.acqSteps li:before{counter-increment:acqc;content:counter(acqc);position:absolute;left:0;top:6px;width:20px;height:20px;border-radius:50%;background:rgba(99,230,255,.14);color:var(--cyan);font-size:10px;font-weight:800;display:grid;place-items:center}
+.acqTable{width:100%;border-collapse:collapse;margin-top:8px;font-size:11px}
+.acqTable th,.acqTable td{border:1px solid rgba(130,177,255,.2);padding:4px 6px;text-align:center}
+.acqTable th{background:rgba(99,230,255,.1);color:#9fdfff}
+.acqTable input{width:100%;background:rgba(6,12,24,.8);border:1px solid rgba(124,245,189,.3);color:var(--text);border-radius:5px;padding:4px 5px;font:11px/1.2 inherit;text-align:center}
+.acqLegend{font-size:10.5px;color:var(--muted);margin-top:8px}
+.acqLegend b.green{color:var(--good)}
+.acqBanner{max-width:1080px;margin:0 auto 14px;padding:9px 14px;border-radius:10px;text-align:center;font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:12px;color:#07130a;background:linear-gradient(180deg,#8fd14f,#78b53e);border:1px solid #6fa838}
+.acqCard.acqFull{grid-column:1 / -1;max-width:1080px;margin:0 auto 16px;width:100%}
+.acqNote{font-size:11px;color:#b9cbe6;margin:8px 0;line-height:1.5}
+.acqNote b{color:var(--good)}
+.acqHint{display:block;font-size:9px;color:var(--muted);letter-spacing:0;text-transform:none;font-weight:500;margin-top:2px}
+.acqTwoCol{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:10px}
+@media(max-width:860px){.acqTwoCol{grid-template-columns:1fr}}
+.acqTable input[readonly]{background:rgba(30,40,60,.5);color:var(--muted);border-style:dashed}
+.acqTable td.ugy{background:rgba(99,230,255,.16)}
+.acqTable td.ugy input.ugyIn{font-weight:800;color:#ffffff;text-align:center;background:rgba(6,12,24,.55)}
+.acqTable th{background:rgba(99,230,255,.16);color:#eaf7ff;font-weight:700}
+.acqTable input::placeholder{color:#9fb4d4;opacity:.75}
+.acqTable td.ugy input.ugyIn::placeholder{color:#cfe6ff;opacity:.7;font-weight:700}
+.wizBtn{padding:9px 18px;border-radius:10px;border:1px solid var(--cyan);background:linear-gradient(135deg,rgba(99,230,255,.2),rgba(117,150,255,.14));color:var(--text);font-weight:700;cursor:pointer}
+.wizBtn:hover{filter:brightness(1.15)}
+.wizBtn.ghost{background:transparent;border-color:var(--line);color:var(--muted)}
+.wizBtn.danger{background:transparent;border-color:rgba(255,120,120,.55);color:#ff9a9a}
+.wizBtn.danger:hover{background:rgba(255,120,120,.12);filter:none}
+body.light .wizBtn.danger{color:#c0392b;border-color:#e2a3a0}
+/* Step 3 · report inline */
+.reportInline{max-width:900px;margin:16px auto;padding:0 16px 40px}
+.reportInline .reportToolbar{border-radius:12px;border:1px solid var(--line);margin-bottom:14px}
+.reportInline .reportSheet{background:#3a4457;border-radius:12px;padding:22px}
+.reportExtra{background:rgba(12,20,38,.85);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+body.light .reportExtra{background:#f3f8fe}
+.rxHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.rxTitle{font-weight:800;color:var(--cyan);font-size:13px;margin-bottom:8px}
+body.light .rxTitle{color:#0b3a63}
+.rxEmpty{font-size:11.5px;color:var(--muted);line-height:1.5}
+.tTrend{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-bottom:12px}
+@media(max-width:640px){.tTrend{grid-template-columns:1fr}}
+.tRow{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--text)}
+body.light .tRow{color:#26384f}
+.tLbl{flex:none;width:88px;color:var(--muted)}
+.tSpark{flex:1;height:38px}
+.tLast{font:700 11px 'JetBrains Mono',monospace;min-width:56px;text-align:right;color:var(--cyan)}
+body.light .tLast{color:#0d6ea8}
+.rxTable{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+.rxTable th,.rxTable td{border:1px solid var(--line);padding:4px 7px;text-align:center;color:var(--text)}
+body.light .rxTable th,body.light .rxTable td{color:#26384f}
+.rxTable th{background:rgba(99,230,255,.1);color:#9fdfff}
+body.light .rxTable th{background:#dcebf7;color:#0b3a63}
+.rxTable td.lbl{text-align:left;font-weight:600}
+.rxOk{color:var(--good);font-weight:700}.rxBad{color:#ff8a8a;font-weight:800}
+body.light .rxBad{color:#c0392b}
+.rxCmpPick{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin:8px 0}
+.rxSlot{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--muted)}
+.rxCmpResult{margin-top:10px}
+@media print{body.step-3 .wizardBar,body.step-3 .reportToolbar,body.step-3 .wizNav{display:none!important}
+ body.step-3 .reportInline{max-width:none;margin:0;padding:0}
+ body.step-3 .reportInline .reportSheet{background:#fff;padding:0}
+ body.step-3 .rpEditable{background:transparent;border:0}}
+
+/* ===================== TEMA CHIARO ===================== */
+body.light{--bg:#eef2f8;--panel:rgba(255,255,255,.9);--panel2:rgba(240,245,252,.95);--line:rgba(40,80,140,.22);--cyan:#0d6ea8;--blue:#2d5fb3;--violet:#7a4fc0;--text:#12233a;--muted:#4a5c74;--good:#1a7d33;--warn:#b5730a;background:#eef2f8}
+body.light{background:radial-gradient(circle at 18% 8%,rgba(120,160,230,.18),transparent 32%),radial-gradient(circle at 82% 18%,rgba(150,120,210,.12),transparent 30%),linear-gradient(145deg,#eef2f8 0%,#e3ebf6 55%,#eef2f8 100%)!important}
+body.light:before{opacity:.10;background-image:radial-gradient(circle,rgba(40,80,140,.5) 0 1px,transparent 1.2px)}
+body.light .top{background:rgba(255,255,255,.9)}
+body.light label{color:#42597a}
+body.light input,body.light select,body.light button{background:linear-gradient(180deg,#ffffff,#eef3fa);color:#12233a;border:1px solid rgba(40,80,140,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 6px rgba(30,60,110,.08)}
+body.light select{background-color:#fff;color:#12233a}
+body.light select option{background:#fff!important;color:#12233a!important}
+body.light select option:checked{background:#cfe0f5!important;color:#0b2a4a!important}
+body.light #wrap{background:radial-gradient(circle at 50% 45%,#dde6f3 0,#eef2f8 60%,#f4f7fb 100%)}
+body.light .side{background:rgba(248,251,255,.92)}
+body.light .card{background:linear-gradient(145deg,#ffffff,#f2f6fc);border:1px solid rgba(40,80,140,.16);box-shadow:0 4px 14px rgba(30,60,110,.08)}
+body.light .card h3{color:#0b3a63}
+body.light .kv{color:#26384f}
+body.light .batchbar{background:rgba(255,255,255,.9)}
+body.light .qcTables{background:#e7edf6;border-top-color:var(--line)}
+body.light .wizardBar{background:linear-gradient(180deg,#ffffff,#eaf0f8)}
+body.light .wizStep{background:#ffffff}
+body.light .wizStep.active{background:linear-gradient(135deg,rgba(13,110,168,.14),rgba(45,95,179,.10))}
+body.light .wizNav,body.light .acqIntro,body.light .acqCard{background:#ffffff}
+body.light .acqIntro,body.light .acqCard{box-shadow:0 4px 14px rgba(30,60,110,.07)}
+body.light .acqNote{color:#33455e}
+body.light .acqSteps li{color:#22364d}
+body.light .acqField input,body.light .acqField select,body.light .acqField textarea{background:#fff;border-color:rgba(26,125,51,.45);color:#12233a}
+body.light .acqTable td.ugy input.ugyIn{color:#0b3a63;background:#eef6ff}
+body.light .acqTable input{background:#fff;color:#12233a;border-color:rgba(26,125,51,.4)}
+body.light .acqTable input::placeholder{color:#6b7c94}
+body.light .acqTable td.ugy input.ugyIn::placeholder{color:#3d7bb5}
+/* Intestazioni tabelle acquisizione leggibili in tema chiaro (testo scuro) */
+body.light .acqTable th{background:#dce9f7;color:#0b2a46;border-color:rgba(40,80,140,.28)}
+body.light .acqTable td{border-color:rgba(40,80,140,.2)}
+body.light .acqTable td.ugy{background:#e3eefb}
+body.light .acqCard h3{color:#0b3a63}
+body.light .acqBanner{color:#0b2a0f}
+body.light .reportSheet,body.light .reportInline .reportSheet{background:#c9d4e2}
+body.light .doseDialog{background:linear-gradient(180deg,#ffffff,#eef3fa);border-color:rgba(40,80,140,.3);color:#12233a}
+body.light ::-webkit-scrollbar-thumb{background:#9db3d0}
+body.light .small{color:#4a5c74}
+body.light .acqBanner{color:#0b2a0f}
+
+/* Toggle tema + zoom note nella wizardBar */
+.wizTools{display:flex;gap:6px;align-items:center;margin-left:auto}
+.wizToolBtn{padding:7px 10px;border-radius:9px;border:1px solid var(--line);background:rgba(15,23,42,.55);color:var(--text);font-weight:700;cursor:pointer;font-size:12px;line-height:1}
+body.light .wizToolBtn{background:#fff}
+.wizToolBtn:hover{border-color:var(--cyan)}
+.wizZoom{display:flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:9px;padding:2px;background:rgba(15,23,42,.4)}
+body.light .wizZoom{background:#fff}
+.wizZoom button{padding:5px 9px;border-radius:7px;border:0;background:transparent;color:var(--text);font-weight:800;font-size:14px;cursor:pointer;line-height:1}
+.wizZoom button:hover{background:rgba(99,230,255,.15)}
+.wizZoom .zLabel{font-size:10px;color:var(--muted);min-width:38px;text-align:center;font-weight:700}
+
+/* ===================== ZOOM NOTE OPERATIVE ===================== */
+/* Il fattore --noteZoom (default 1) ingrandisce tutte le note e le istruzioni. */
+:root{--noteZoom:1}
+.acqIntro .small{font-size:calc(12.5px*var(--noteZoom));line-height:1.55}
+.acqNote{font-size:calc(11px*var(--noteZoom))!important;line-height:1.6!important}
+.acqSteps li{font-size:calc(11.5px*var(--noteZoom))!important;line-height:1.55!important;padding-top:calc(6px*var(--noteZoom));padding-bottom:calc(6px*var(--noteZoom))}
+.acqLegend{font-size:calc(10.5px*var(--noteZoom))!important;line-height:1.55!important}
+.acqField>label{font-size:calc(11px*var(--noteZoom))}
+.acqHint{font-size:calc(9px*var(--noteZoom))}
+.rpNote{font-size:calc(10.5px*var(--noteZoom))!important;line-height:1.55!important}
+.analysisDesc,.analysisIntro,.analysisHint{font-size:calc(11px*var(--noteZoom))!important;line-height:1.5!important}
+body.bigNotes .acqTable{font-size:calc(11px*var(--noteZoom))}
+
+/* ===== Layout card acquisizione: affiancamento + input dimensionati ===== */
+.acqGrid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:1080px;margin:0 auto 16px}
+@media(max-width:760px){.acqGrid2{grid-template-columns:1fr}}
+.acqGrid2 .acqCard{margin:0;width:auto}
+.acqGrid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:1080px;margin:0 auto 16px}
+@media(max-width:980px){.acqGrid3{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){.acqGrid3{grid-template-columns:1fr}}
+.acqGrid3 .acqCard{margin:0;width:auto}
+.acqLegendFull{max-width:1080px;margin:0 auto 16px;padding:10px 14px;border:1px dashed var(--line);border-radius:10px}
+/* Import da Excel/JSON */
+.acqImport{max-width:1080px;margin:0 auto 14px;display:flex;gap:14px;align-items:center;padding:14px 16px;border:1.5px dashed rgba(99,230,255,.5);border-radius:14px;background:linear-gradient(145deg,rgba(12,26,44,.7),rgba(10,18,34,.7));transition:.15s}
+.acqImport.draghot{border-color:var(--cyan);background:linear-gradient(145deg,rgba(20,44,70,.85),rgba(14,26,48,.85));box-shadow:0 0 0 1px rgba(99,230,255,.25),0 0 28px rgba(99,230,255,.14)}
+.acqImportIcon{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:22px;color:var(--cyan);background:rgba(99,230,255,.14);border:1px solid rgba(99,230,255,.4)}
+.acqImportBody{flex:1;min-width:0}
+.acqImportTitle{font-weight:800;color:#cfeaff;font-size:13px}
+.acqImportDesc{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5}
+.acqImportBtns{flex:none}
+.acqImportMsg{max-width:1080px;margin:0 auto 14px;padding:9px 14px;border-radius:10px;font-size:12px;font-weight:600}
+.acqImportMsg.ok{background:rgba(124,245,189,.12);border:1px solid rgba(124,245,189,.4);color:var(--good)}
+.acqImportMsg.err{background:rgba(255,120,120,.12);border:1px solid rgba(255,120,120,.4);color:#ff9a9a}
+body.light .acqImport{background:linear-gradient(145deg,#eef5fd,#e6eefa);border-color:rgba(13,110,168,.5)}
+body.light .acqImportTitle{color:#0b3a63}
+body.light .acqImportMsg.ok{color:#1a7d33}
+body.light .acqImportMsg.err{color:#c0392b}
+/* Dashboard controllo missione */
+.missionDash{max-width:1080px;margin:0 auto 14px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,rgba(12,24,44,.72),rgba(10,18,34,.72))}
+body.light .missionDash{background:linear-gradient(145deg,#f3f8fe,#e9f1fb)}
+.mdHead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.mdTitle{font-weight:800;color:#cfeaff;font-size:13px}
+body.light .mdTitle{color:#0b3a63}
+.mdGauge{display:flex;align-items:center;gap:8px;flex:1;max-width:320px}
+.mdGaugeBar{flex:1;height:9px;border-radius:6px;background:rgba(120,150,200,.22);overflow:hidden}
+.mdGaugeBar>span{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--good));transition:width .3s}
+.mdPct{font-weight:800;color:var(--cyan);font-size:12px;min-width:38px;text-align:right}
+body.light .mdPct{color:#0d6ea8}
+.mdGrid{display:grid;grid-template-columns:1fr 1fr;gap:5px 18px}
+@media(max-width:680px){.mdGrid{grid-template-columns:1fr}}
+.mdRow{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);padding:2px 0}
+.mdRow.mdOk{color:var(--text)}
+body.light .mdRow{color:#4a5c74}body.light .mdRow.mdOk{color:#12233a}
+.mdIco{width:16px;text-align:center;color:var(--muted)}
+.mdRow.mdOk .mdIco{color:var(--good)}
+.mdLbl{flex:1;min-width:0}
+.mdBar{width:74px;height:6px;border-radius:4px;background:rgba(120,150,200,.22);overflow:hidden;flex:none}
+.mdBar>span{display:block;height:100%;background:var(--cyan)}
+.mdRow.mdOk .mdBar>span{background:var(--good)}
+.mdCnt{font:700 10px 'JetBrains Mono',monospace;min-width:30px;text-align:right;color:var(--muted)}
+.mdFoot{margin-top:10px;font-size:11px;color:var(--muted);display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.mdReady{color:var(--good);font-weight:700}.mdWait{color:var(--warn);font-weight:700}
+/* Input tabelle: centrati e non troppo larghi; la colonna Karia respira senza dilatarsi */
+.acqTable input{max-width:150px;margin:0 auto}
+.acqTable td{padding:4px}
+.acqTableCompact th,.acqTableCompact td{padding:3px 4px;font-size:11px}
+.acqTableCompact input{max-width:none;width:100%}
+.acqTableCompact td.ugy{width:52px}
+
+/* ===== Contrasto tema chiaro: barra top, batchbar, pulsanti ===== */
+body.light label{color:#33475f}
+body.light .top:before{color:#0d6ea8;text-shadow:none}
+body.light .batchbar button,body.light .top button{background:linear-gradient(180deg,#ffffff,#e9f0f9);color:#12233a;border-color:rgba(40,80,140,.3)}
+body.light .batchbar button:hover,body.light .top button:hover{border-color:#0d6ea8}
+body.light .guideLaunch{color:#b5730a!important;border-color:#e0b060!important}
+body.light .renameLaunch{color:#0e7a43!important;border-color:#8fd0a8!important}
+body.light .sliceReadout{color:#0d6ea8}
+body.light .hintkey{color:#0d6ea8}
+body.light .analysisIntro,body.light .analysisDesc,body.light .analysisHint,body.light .analysisTitle{color:#26384f}
+body.light .dropTitle,body.light .dropSub,body.light #drop{color:#26384f}
+</style></head><body class="step-1">
+<div class="wizardBar">
+ <div class="wizStep" data-step="1"><div class="wizNum">1</div><div class="wizTxt"><div class="wizTitle">Acquisizione dati</div><div class="wizSub">Guida operatore · dati del controllo</div></div></div>
+ <div class="wizStep" data-step="2"><div class="wizNum">2</div><div class="wizTxt"><div class="wizTitle">Analisi immagini</div><div class="wizSub">Carica HDR · misure ROI/CQ</div></div></div>
+ <div class="wizStep" data-step="3"><div class="wizNum">3</div><div class="wizTxt"><div class="wizTitle">Report</div><div class="wizSub">Visualizza · stampa · salva</div></div></div>
+ <div class="wizTools">
+  <div class="wizZoom" title="Ingrandisci le note operative">
+   <button id="noteZoomOut" type="button" aria-label="Riduci testo note">A−</button>
+   <span id="noteZoomLabel" class="zLabel">100%</span>
+   <button id="noteZoomIn" type="button" aria-label="Ingrandisci testo note">A+</button>
+  </div>
+  <button id="themeToggle" class="wizToolBtn" type="button" title="Cambia tema chiaro/scuro">☀︎ Chiaro</button>
+ </div>
+</div>
+
+<!-- ===================== STEP 1 · ACQUISIZIONE DATI ===================== -->
+<div class="acqWrap step1only">
+ <div class="acqIntro">
+  <h2>Scheda di acquisizione dati — Controllo di qualità DR</h2>
+  <div class="small">Guida operativa per la conduzione del controllo. Compila i dati identificativi ed esegui la batteria di test e acquisizioni seguendo l'ordine indicato in questa pagina. Tutti i valori inseriti vengono salvati e alimentano automaticamente il report finale (Step 3). Al termine delle acquisizioni passa allo <b>Step 2</b> per caricare le immagini HDR e misurarle.</div>
+ </div>
+
+ <div id="acqImport" class="acqImport">
+  <div class="acqImportIcon">⬇︎</div>
+  <div class="acqImportBody">
+   <div class="acqImportTitle">Precompila da controllo precedente</div>
+   <div class="acqImportDesc">Trascina qui il <b>file Excel</b> del vecchio controllo (.xlsx) o un <b>JSON</b> salvato in precedenza per recuperare automaticamente dati identificativi, geometria del setup e tabelle. Potrai comunque modificare tutto.</div>
+  </div>
+  <div class="acqImportBtns">
+   <button id="acqImportPick" class="wizBtn" type="button">Scegli file…</button>
+   <input id="acqImportFile" type="file" accept=".xlsx,.json,application/json" style="display:none">
+  </div>
+ </div>
+ <div id="acqImportMsg" class="acqImportMsg" style="display:none"></div>
+
+ <div id="missionDash" class="missionDash"></div>
+
+ <div class="acqBanner">DA COMPILARE DURANTE IL CONTROLLO DEL DR</div>
+
+ <div class="acqGrid">
+  <div class="acqCard">
+   <h3>Dati identificativi</h3>
+   <div class="acqField"><label>Dove viene utilizzato il DR<span class="acqHint">(DR tavolo · DR Wall Stand · DR)</span></label><select id="acq_tipoDR"><option>DR tavolo</option><option>DR Wall Stand</option><option>DR</option></select></div>
+   <div class="acqField"><label>Data del controllo</label><input id="acq_dataControllo" type="date"></div>
+   <div class="acqField"><label>Azienda</label><input id="acq_azienda" type="text" placeholder="es. ASL TO 3 - P.O. Rivoli"></div>
+   <div class="acqField"><label>Sala / U.O.</label><input id="acq_sala" type="text" placeholder="es. Radiologia - Sala 1"></div>
+   <div class="acqField"><label>Unità</label><input id="acq_unita" type="text" placeholder="es. Telecomandato"></div>
+   <div class="acqField"><label>Ditta / Modello</label><input id="acq_dittaModello" type="text" placeholder="es. Siemens Luminos dRF Max"></div>
+   <div class="acqField"><label>N° serie tubo</label><input id="acq_serieTubo" type="text" placeholder="es. OPTITOP 150/40/80HC / SN 807262253"></div>
+   <div class="acqField"><label>Operatore</label><input id="acq_operatore" type="text" placeholder="es. Cognome, Cognome"></div>
+   <div class="acqField"><label>Software analisi</label><input id="acq_software" type="text" placeholder="es. software di analisi immagini"></div>
+  </div>
+
+  <div class="acqCard">
+   <h3>Geometria e setup</h3>
+   <div class="acqNote">Se possibile lavorare con il detettore <b>fuori potter</b>, a distanza fuoco–detettore indicata. In alternativa escludere il detettore e coprirlo per evitare immagini di ghost.</div>
+   <div class="acqField"><label>Fuori potter · distanza fuoco–detettore (cm)</label><input id="acq_fuoriPotter" type="text" placeholder="es. 115"></div>
+   <div class="acqNote">Se non è possibile lavorare fuori potter: <b>estrarre la griglia</b> dove è possibile e indicare se è presente.</div>
+   <div class="acqField"><label>Griglia presente? (Assente/Presente)</label><select id="acq_griglia"><option>Assente</option><option>Presente</option></select></div>
+   <div class="acqNote"><b>LETTINO:</b> distanza fuoco–detettore di riferimento 130 cm. <b>STATIVO:</b> distanza fuoco–detettore di riferimento 180 cm. Se la distanza è diversa, indicarla nei campi.</div>
+   <div class="acqField"><label>LETTINO · fuoco–detettore (cm)</label><input id="acq_lettino" type="text" placeholder="rif. 130 · es. 115"></div>
+   <div class="acqField"><label>STATIVO · fuoco–detettore (cm)</label><input id="acq_stativo" type="text" placeholder="rif. 180 cm"></div>
+   <div class="acqNote">Aggiungere il filtro della ditta; in mancanza di filtro proprietario inserire <b>1 mm Cu</b>. Aprire i collimatori al massimo. Riportare il protocollo scelto (meglio protocollo pattern o modello).</div>
+   <div class="acqField"><label>Tipo di filtro e spessore</label><input id="acq_filtrazione" type="text" placeholder="es. 1 mm Cu"></div>
+   <div class="acqField"><label>Protocollo scelto (pattern o modello)</label><input id="acq_protocollo" type="text" placeholder="es. Fisica"></div>
+   <div class="acqField"><label>DFR · distanza fuoco–rivelatore (cm)</label><input id="acq_dfr" type="text" placeholder="es. 115"></div>
+   <div class="acqField"><label>Tensione base impostata (kV)</label><input id="acq_kv" type="text" placeholder="es. 70"></div>
+   <div class="acqField"><label>Note</label><textarea id="acq_noteTesta" rows="2"></textarea></div>
+  </div>
+ </div>
+
+ <div class="acqGrid2">
+  <div class="acqCard">
+   <h3>Funzione di risposta (STP) · 6 immagini uniformi</h3>
+   <div class="acqNote">Condizioni di esposizione per ottenere sul DR le dosi indicate. Impostare la tensione (kV) e ricavare i mAs per ottenere dosi di ingresso pari a: <b>1 · 2,5 · 5 · 10 · 20 · 30 µGy</b> teorici. Meglio lavorare fuori potter; altrimenti escludere il detettore e coprirlo per evitare immagini di ghost.</div>
+   <div class="acqNote">Acquisire le immagini di <b>tutto il flat panel</b> (6 immagini uniformi): campo aperto al massimo, togliere il camice di Pb se in uso. <b>No Piranha</b> in campo. Riportare i mGy letti da Piranha (Karia).</div>
+   <table class="acqTable acqTableCompact"><thead><tr><th style="width:70px">µGy</th><th style="width:70px">kV</th><th>Karia (µGy)</th><th style="width:70px">mAs</th></tr></thead>
+    <tbody id="acqStpBody"></tbody></table>
+   <div class="acqField" style="margin-top:10px"><label>Tipo curva PV</label><select id="acq_curvaPV"><option>LIN</option><option>LOG</option></select></div>
+  </div>
+
+  <div class="acqCard">
+   <h3>Indicatore di esposizione (EI) · 6 immagini</h3>
+   <div class="acqNote">Segnare il valore di <b>EI</b> mostrato dall'apparecchiatura per ciascuna delle 6 acquisizioni.</div>
+   <div class="acqNote">Indicare il tipo di andamento (LIN o LOG) in base ai dati del grafico EI.</div>
+   <table class="acqTable acqTableCompact"><thead><tr><th style="width:70px">µGy</th><th style="width:70px">kV</th><th>EI</th><th style="width:70px">mAs</th></tr></thead>
+    <tbody id="acqEiBody"></tbody></table>
+   <div class="acqField" style="margin-top:10px"><label>Tipo curva EI</label><select id="acq_curvaEI"><option>LIN</option><option>LOG</option></select></div>
+  </div>
+ </div>
+
+ <div class="acqGrid3">
+  <div class="acqCard">
+   <h3>Ripetibilità EI · 2 acquisizioni a 2,5 µGy</h3>
+   <div class="acqNote">Acquisire <b>2 immagini</b> con i valori di mAs corrispondenti a 2,5 µGy teorici e registrare l'EI, per verificare la riproducibilità dell'indicatore di esposizione.</div>
+   <table class="acqTable acqTableCompact"><thead><tr><th>µGy</th><th>kV</th><th>EI</th><th>mAs</th></tr></thead>
+    <tbody id="acqRepBody"></tbody></table>
+  </div>
+
+  <div class="acqCard">
+   <h3>Sensibilità a basso contrasto · TOR CDR</h3>
+   <div class="acqNote">Acquisire il fantoccio <b>TOR CDR</b> con le condizioni di esposizione precedenti, impostate per avere sul detettore le dosi indicate. Contare gli inserti a basso contrasto visibili (Step 2).</div>
+   <table class="acqTable acqTableCompact"><thead><tr><th>µGy</th><th>kV</th><th>mAs</th></tr></thead>
+    <tbody id="acqTorBody"></tbody></table>
+  </div>
+
+  <div class="acqCard">
+   <h3>Persistenza immagini latenti (Ghost)</h3>
+   <div class="acqNote">Posizionare l'oggetto di <b>Piombo</b> sul detettore e acquisire un'immagine ad alto contrasto con i parametri per ottenere sul detettore la dose indicata (2,5 µGy).</div>
+   <table class="acqTable acqTableCompact"><thead><tr><th>µGy</th><th>kV</th><th>mAs</th></tr></thead>
+    <tbody><tr><td class="ugy"><input id="acq_ghostUgy" placeholder="2,5"></td><td><input id="acq_ghostKv" placeholder="es. 70"></td><td><input id="acq_ghostMas" placeholder="es. 2"></td></tr></tbody></table>
+   <div class="acqNote" style="margin-top:10px">Togliere il Piombo e acquisire un'immagine di <b>minimo carico</b> (minori kV e mAs possibili).</div>
+   <div class="acqField"><label>kV minimi</label><input id="acq_kvMin" type="text" placeholder="es. 40"></div>
+   <div class="acqField"><label>mAs minimi</label><input id="acq_masMin" type="text" placeholder="es. 0,5"></div>
+  </div>
+ </div>
+
+ <div class="wizNav">
+  <div class="acqActions">
+   <button id="acqSaveData" class="wizBtn ghost" type="button">💾 Salva dati inseriti</button>
+   <button id="acqLoadData" class="wizBtn ghost" type="button">📂 Carica dati salvati</button>
+   <input id="acqLoadFile" type="file" accept=".json,application/json" style="display:none">
+   <button id="acqCleanUp" class="wizBtn danger" type="button" title="Azzera completamente tutti i dati">🧹 Clean up</button>
+  </div>
+  <button class="wizBtn" data-goto="2" type="button">Vai allo Step 2 · Analisi immagini →</button>
+ </div>
+</div>
+
+<div class="top stepHideAcq">
  <input id="file" type="file" multiple style="display:none">
  <div class="g"><label>Offset raster (auto)</label><input id="offset" type="number" value="0" step="1" title="0 per file pixel separato; 10240 se header e raster sono nello stesso file"></div>
  <div class="g"><label>Matrice Siemens</label><select id="preset">
@@ -102,7 +550,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.32;ba
  <div class="g"><label>Zoom</label><input id="zoom" type="number" value="0.25" min="0.05" max="4" step="0.05"></div>
  <button id="auto">Auto W/L</button><button id="invert">Inverti</button><button id="saveTemplate">Salva ROI</button><button id="reset">Reset ROI</button>
 </div>
-<div class="batchbar"><button id="guideOpen" class="tinybtn guideLaunch" type="button">🚀 GUIDA GALATTICA</button>
+<div class="batchbar stepHideAcq"><button id="guideOpen" class="tinybtn guideLaunch" type="button">🚀 GUIDA GALATTICA</button>
  <button id="pickSingle" type="button">＋ Singola immagine</button>
  <button id="pickFolder" type="button">▣ Carica cartella / range</button><input id="folder" type="file" webkitdirectory directory multiple>
  <button id="renameFolder" class="renameLaunch" type="button">✎ Rinomina immagini</button>
@@ -113,7 +561,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.32;ba
  <div class="g"><label>Slice</label><input id="slice" type="range" min="1" max="1" value="1"></div><div id="sliceReadout" class="sliceReadout">1 / 1</div>
  
 </div>
-<div class="main"><div id="wrap"><div id="drop"><div class="dropIcon">＋</div><div class="dropTitle">Trascina qui il controllo Siemens o un DICOM</div><div>Carica <b>.hdr + immagine senza estensione / .pp</b> oppure un file <b>DICOM .dcm</b></div><div class="dropSub">Matrice, pixel spacing e window/level vengono letti automaticamente quando disponibili.<br><span class="dropSub">“Carica cartella / range” accetta anche una serie di DICOM non compressi.</span></div><div id="loadStatus" class="dropSub" style="margin-top:12px">pronto · lettura locale senza rete</div></div><button id="newImage" type="button" title="Carica una nuova immagine">+</button><canvas id="cv"></canvas><div id="roiDeck"></div></div><aside class="side">
+<div class="main stepHideAcq"><div id="wrap"><div id="drop"><div class="dropIcon">＋</div><div class="dropTitle">Trascina qui il controllo Siemens o un DICOM</div><div>Carica <b>.hdr + immagine senza estensione / .pp</b> oppure un file <b>DICOM .dcm</b></div><div class="dropSub">Matrice, pixel spacing e window/level vengono letti automaticamente quando disponibili.<br><span class="dropSub">“Carica cartella / range” accetta anche una serie di DICOM non compressi.</span></div><div id="loadStatus" class="dropSub" style="margin-top:12px">pronto · lettura locale senza rete</div></div><button id="newImage" type="button" title="Carica una nuova immagine">+</button><canvas id="cv"></canvas><div id="roiDeck"></div></div><aside class="side">
  <div class="card"><h3>Scheda acquisizione</h3><div id="study" class="kv">Carica HDR + immagine oppure un DICOM.</div></div>
  <div class="card analysisHub"><h3>Analisi CQ — scegli cosa devi fare</h3>
   <div class="analysisIntro">Tutte le analisi sono qui. Prima carica la serie e, quando richiesto, disegna o seleziona le ROI sull’immagine.</div>
@@ -151,7 +599,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.32;ba
   <div class="reportDataBox">
    <div class="reportDataHead"><div class="reportDataTitle">Dati sessione / report</div><div id="reportDataStatus" class="reportDataStatus">nessuna misura registrata</div></div>
    <div class="small" style="margin-top:5px">Le misure eseguite vengono raccolte automaticamente in una struttura unica, pronta per il prossimo generatore di report.</div>
-   <div class="reportDataActions"><button id="copyAllMeasurements" class="tinybtn" type="button">Copia tutte le misure per Excel</button><button id="exportSessionJson" class="tinybtn" type="button">Esporta dati JSON</button></div>
+   <div class="reportDataActions"><button id="generaReport" class="tinybtn qcbtn" type="button">📄 Genera report</button><button id="copyAllMeasurements" class="tinybtn" type="button">Copia tutte le misure per Excel</button><button id="exportSessionJson" class="tinybtn" type="button">Esporta dati JSON</button></div>
   </div>
  </div>
  <div class="card"><h3>File / raster</h3><div id="info" class="kv">Carica un file.</div></div>
@@ -165,9 +613,36 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.32;ba
  </div>
  <div class="card"><h3>Stringhe header</h3><div id="strings" class="kv small"></div></div>
 </aside></div>
-<section class="qcTables"><h2>Risultati controllo di qualità</h2><div class="tableGrid">
+<section class="qcTables stepHideAcq"><h2>Risultati controllo di qualità</h2><div class="tableGrid">
 <table class="qctable"><caption>Non uniformità</caption><thead><tr><th>Dose</th><th>Indice</th><th>Risultato</th></tr></thead><tbody id="uniformBody"><tr><td colspan="3" class="mutedCell">Nessun dato</td></tr></tbody></table>
 </div></section>
+
+<!-- Navigazione Step 2 -->
+<div class="wizNav step2only">
+ <button class="wizBtn ghost" data-goto="1" type="button">← Torna allo Step 1</button>
+ <button class="wizBtn" data-goto="3" type="button">Vai allo Step 3 · Report →</button>
+</div>
+
+<!-- ===================== STEP 3 · REPORT ===================== -->
+<div class="reportInline step3only">
+ <div class="reportToolbar">
+  <div class="reportToolbarTitle">Report CQ — Digital Direct Radiography</div>
+  <div class="reportToolbarActions">
+   <button id="reportPrintInline" class="tinybtn qcbtn" type="button">🖨 Stampa / PDF</button>
+   <button id="reportSaveInline" class="tinybtn" type="button">💾 Salva report (HTML)</button>
+   <button id="reportArchive" class="tinybtn" type="button">🗄 Archivia</button>
+   <button id="reportTrend" class="tinybtn" type="button">📈 Storico</button>
+   <button id="reportCompare" class="tinybtn" type="button">⇄ Confronta</button>
+   <button id="reportRefreshInline" class="tinybtn" type="button">↻ Ricalcola</button>
+  </div>
+ </div>
+ <div id="reportExtra" class="reportExtra" style="display:none"></div>
+ <div id="reportSheetInline" class="reportSheet"></div>
+ <div class="wizNav">
+  <button class="wizBtn ghost" data-goto="2" type="button">← Torna allo Step 2</button>
+  <span></span>
+ </div>
+</div>
 
 
 <div id="renameModal" class="renameModal" aria-hidden="true">
@@ -189,19 +664,34 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.32;ba
   <h3>Immagini per Ghost</h3>
   <div class="small">Indica l’immagine irradiata ad alto contrasto e quella buia/minimo carico.</div>
   <div class="doseGrid">
-   <label>Immagine irradiata</label><input id="ghostIrr" type="number" min="1" value="9">
-   <label>Immagine buia</label><input id="ghostDark" type="number" min="1" value="10">
+   <label>Immagine irradiata</label><input id="ghostIrr" type="number" min="1" value="12">
+   <label>Immagine buia</label><input id="ghostDark" type="number" min="1" value="13">
   </div>
   <div class="doseActions"><button id="ghostCancel" class="tinybtn">Annulla</button><button id="ghostDo" class="tinybtn qcbtn">Misura Ghost</button></div>
  </div>
 </div>
+
+<div id="reportModal" class="reportModal" aria-hidden="true">
+ <div class="reportShell">
+  <div class="reportToolbar">
+   <div class="reportToolbarTitle">Report CQ — Digital Direct Radiography</div>
+   <div class="reportToolbarActions">
+    <button id="reportPrint" class="tinybtn qcbtn" type="button">🖨 Stampa / PDF</button>
+    <button id="reportRefresh" class="tinybtn" type="button">↻ Ricalcola</button>
+    <button id="reportClose" class="tinybtn" type="button">Chiudi</button>
+   </div>
+  </div>
+  <div id="reportSheet" class="reportSheet"><!-- report generato via JS --></div>
+ </div>
+</div>
+
 <div id="doseModal" class="doseModal">
  <div class="doseDialog">
   <h3>Immagini per uniformità</h3>
   <div class="small">Scegli le immagini del range. La prima esegue anche la ricerca bad pixel.</div>
   <div class="doseGrid">
-   <label>2,5 mGy — immagine</label><input id="slice25" type="number" min="1" value="2">
-   <label>10 mGy — immagine</label><input id="slice10" type="number" min="1" value="4">
+   <label class="doseLbl">2,5 mGy — immagine</label><input id="slice25" type="number" min="1" value="2">
+   <label class="doseLbl">10 mGy — immagine</label><input id="slice10" type="number" min="1" value="4">
   </div>
   <div class="doseActions"><button id="doseCancel" class="tinybtn">Annulla</button><button id="doseRun" class="tinybtn qcbtn">Calcola</button></div>
  </div>
@@ -254,10 +744,12 @@ function qcCaptureRoiRange(rows){
  qcSyncContext();
  qcSession.measurements.roiRange=rows.filter(r=>r.q).map(r=>({image:r.slice,key:r.key,roi:r.roi,area:qcNum(r.q.area??r.q.n),n:qcNum(r.q.n),mean:qcNum(r.q.mean),sd:qcNum(r.q.sd),min:qcNum(r.q.mn),max:qcNum(r.q.mx),cv:qcNum(r.q.cv)}));
  qcTouch();
+ if(typeof syncSessionToAcq==='function')syncSessionToAcq();
 }
 function qcCaptureUniformity(){
  qcSyncContext();
  qcSession.measurements.uniformity=uniformRows.map(r=>({doseLabel:r.doseLabel||null,image:r.image,NULS:qcNum(r.NULS),NUGS:qcNum(r.NUGS),NULSNR:qcNum(r.NULSNR),NUGSNR:qcNum(r.NUGSNR),grid:{cols:r.cols,rows:r.rows,sidePx:r.side,marginPx:r.margin}}));
+ setTimeout(()=>{if(typeof syncSessionToAcq==='function')syncSessionToAcq();},0);
  qcSession.measurements.badPixels=badPixelLast?{image:badPixelLast.image,mean:qcNum(badPixelLast.mean),sd:qcNum(badPixelLast.sd),threshold:qcNum(badPixelLast.threshold),min:qcNum(badPixelLast.min),max:qcNum(badPixelLast.max),count:badPixelLast.count,roi:{x:badPixelLast.x0,y:badPixelLast.y0,w:badPixelLast.rw,h:badPixelLast.rh},pixels:(badPixelLast.bad||[]).map(p=>({x:p.x,y:p.y,value:p.v})),truncated:!!badPixelLast.truncated}:null;
  qcTouch();
 }
@@ -265,6 +757,7 @@ function qcCaptureGhost(){
  qcSyncContext();
  qcSession.measurements.ghost=ghostLastRows.map(r=>({name:r.name,image:r.N,area:qcNum(r.area),n:qcNum(r.n),mean:qcNum(r.mean),sd:qcNum(r.sd),min:qcNum(r.min),max:qcNum(r.max)}));
  qcTouch();
+ if(typeof syncSessionToAcq==='function')syncSessionToAcq();
 }
 function qcMarkExport(kind,detail){qcSession.exports.push({at:new Date().toISOString(),kind,detail:detail||null});if(qcSession.exports.length>100)qcSession.exports=qcSession.exports.slice(-100);qcTouch()}
 function qcUpdateStatus(){let el=$('reportDataStatus');if(!el)return;let r=qcSession.measurements.roiRange.length,u=qcSession.measurements.uniformity.length,g=qcSession.measurements.ghost.length,b=qcSession.measurements.badPixels?.count;el.textContent=`ROI ${r} · uniformità ${u} · ghost ${g}${Number.isFinite(b)?` · bad pixel ${b}`:''}`}
@@ -829,7 +1322,12 @@ $('saveRoiSet').onclick=saveLocal;$('saveTemplate').onclick=saveLocal;
 $('loadRoiSet').onclick=()=>{try{let s=localStorage.getItem(ROI_STORE);if(!s){alert('Nessun template ROI salvato in questo browser.');return}applyTemplate(JSON.parse(s))}catch(e){alert('Il browser blocca il salvataggio locale da file://. Usa Importa JSON.')}};
 $('exportRoi').onclick=()=>{if(!rois.length){alert('Non ci sono ROI da esportare.');return}let blob=new Blob([JSON.stringify(roiTemplate(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FLC_QC_ROI_template.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 $('importRoi').onclick=()=>$('roiImportFile').click();$('roiImportFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{applyTemplate(JSON.parse(await f.text()))}catch(err){alert('Impossibile importare: '+err.message)}e.target.value=''};
-document.addEventListener('keydown',e=>{let tag=document.activeElement?.tagName;if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA')return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'){e.preventDefault();duplicateSelected();return}if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();deleteSelected();return}let step=e.shiftKey?10:1;if(e.key==='ArrowLeft'){e.preventDefault();moveSelected(-step,0)}else if(e.key==='ArrowRight'){e.preventDefault();moveSelected(step,0)}else if(e.key==='ArrowUp'){e.preventDefault();moveSelected(0,-step)}else if(e.key==='ArrowDown'){e.preventDefault();moveSelected(0,step)}});
+document.addEventListener('keydown',e=>{const ae=document.activeElement;const tag=ae?.tagName;
+ // Non intercettare i tasti quando si sta scrivendo in un campo di testo o in un campo editabile (report/note)
+ if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA'||(ae&&ae.isContentEditable))return;
+ // Le scorciatoie ROI valgono solo nello Step 2 (viewer immagini)
+ if(!document.body.classList.contains('step-2'))return;
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'){e.preventDefault();duplicateSelected();return}if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();deleteSelected();return}let step=e.shiftKey?10:1;if(e.key==='ArrowLeft'){e.preventDefault();moveSelected(-step,0)}else if(e.key==='ArrowRight'){e.preventDefault();moveSelected(step,0)}else if(e.key==='ArrowUp'){e.preventDefault();moveSelected(0,-step)}else if(e.key==='ArrowDown'){e.preventDefault();moveSelected(0,step)}});
 window.addEventListener('error',e=>{const st=$('loadStatus');if(st)st.textContent='⚠ '+(e.message||'errore JavaScript');}); $('loadStatus').textContent='pronto · FLC + DICOM · lettura locale senza rete'; $('preset').value='2840x2874'; $('w').value=2840; $('h').value=2874; renderQcTables();
 function statsOnPixels(r,pixels,w,h){
  if(!r||r.t==='line')return null;let x0=Math.max(0,Math.floor(Math.min(r.x,r.x2))),x1=Math.min(w-1,Math.ceil(Math.max(r.x,r.x2))),y0=Math.max(0,Math.floor(Math.min(r.y,r.y2))),y1=Math.min(h-1,Math.ceil(Math.max(r.y,r.y2)));let n=0,sum=0,sum2=0,mn=Infinity,mx=-Infinity,cx=(r.x+r.x2)/2,cy=(r.y+r.y2)/2,rx=Math.abs(r.x2-r.x)/2,ry=Math.abs(r.y2-r.y)/2;
@@ -1013,11 +1511,1075 @@ $('copyAllMeasurements').onclick=()=>{let t=qcSessionExcelTSV();if(!t.trim()){al
 $('exportSessionJson').onclick=qcExportJson;
 qcUpdateStatus();
 
+/* =========================================================================
+   REPORT CQ — riproduzione spaziale del foglio "Report" del file Excel.
+   I dati provengono dalla sessione (FLC-QC-SESSION) e dai campi editabili
+   (che replicano le celle verdi/gialle del foglio "Inserimento dati").
+   ========================================================================= */
+
+// Stato del report: valori manuali persistiti in memoria (celle verdi/gialle Excel)
+const REPORT_STORE='flc_qc_report_v1';
+let reportManual=null;
+function reportDefaults(){return{
+  tipoDR:'DR tavolo', dataControllo:new Date().toISOString().slice(0,10),
+  azienda:'', sala:'', unita:'Telecomandato', dittaModello:'', serieTubo:'', operatore:'',
+  noteTesta:'', software:'',
+  protocollo:'Fisica', griglia:'Assente', filtrazione:'1 mm Cu', dfr:'', kv:'70',
+  // --- Setup acquisizione (celle verdi "Inserimento dati") ---
+  fuoriPotter:'',      // distanza fuoco-detettore fuori potter (cm)
+  lettino:'',          // LETTINO: distanza fuoco-detettore (cm)
+  stativo:'',          // STATIVO: distanza fuoco-detettore (cm)
+  // STP: righe µGy teorici / kV / mAs / Karia(Piranha) / PV / SD / EI — 6 punti
+  // ugy vuoto: il valore d'esempio (1..30) resta come placeholder, editabile
+  stp:[ {ugy:'',kv:'',mas:'',karia:'',pv:'',sd:'',ei:''},{ugy:'',kv:'',mas:'',karia:'',pv:'',sd:'',ei:''},
+        {ugy:'',kv:'',mas:'',karia:'',pv:'',sd:'',ei:''},{ugy:'',kv:'',mas:'',karia:'',pv:'',sd:'',ei:''},
+        {ugy:'',kv:'',mas:'',karia:'',pv:'',sd:'',ei:''},{ugy:'',kv:'',mas:'',karia:'',pv:'',sd:'',ei:''} ],
+  curvaPV:'LIN', curvaEI:'LIN',
+  // Ripetibilità EI (2 acquisizioni a 2,5 µGy nel foglio; teniamone 3 max)
+  rep:[ {ugy:'',kv:'',pv:'',ei:'',mas:'',karia:''},{ugy:'',kv:'',pv:'',ei:'',mas:'',karia:''},{ugy:'',kv:'',pv:'',ei:'',mas:'',karia:''} ],
+  // Uniformità (dai risultati sessione, editabili)
+  nuls25:'', nugs25:'', nuls10:'', nugs10:'',
+  badpixel:'', artefattiUnif:'No',
+  // Sensibilità basso contrasto (TOR CDR) — µGy / kV / mAs / oggetti visibili
+  contrast:[ {ugy:'',kv:'',karia:'',mas:'',obj:''},{ugy:'',kv:'',karia:'',mas:'',obj:''},{ugy:'',kv:'',karia:'',mas:'',obj:''} ],
+  // Ghost — acquisizione Pb (2,5 µGy) e immagine di minimo carico
+  ghostUgy:'2,5', ghostKv:'', ghostMas:'', kvMin:'', masMin:'',
+  // Ghost / lag additivo — medie ROI (celle gialle, calcolate su immagini)
+  roi2buio:'', roi3irr:'', roi4buio:'',
+  artefattiVis:'No',
+  darkNoise:'Conforme',
+  giudizioTecnica:'', noteTecnica:'', idoneita:'', mantenimento:'', interventi:'', noteFinali:'',
+  firmaSpecialista:'', firmaResponsabile:''
+}}
+function reportLoad(){ try{reportManual=JSON.parse(localStorage.getItem(REPORT_STORE))||reportDefaults()}catch(e){reportManual=reportDefaults()}
+  // merge con eventuali chiavi nuove
+  reportManual=Object.assign(reportDefaults(),reportManual); }
+function reportSave(){ try{localStorage.setItem(REPORT_STORE,JSON.stringify(reportManual))}catch(e){} }
+
+// numero da stringa "it" o "en"
+function rNum(v){ if(v===''||v===null||v===undefined)return null; if(typeof v==='number')return Number.isFinite(v)?v:null;
+  let n=parseFloat(String(v).replace(/\s/g,'').replace(',','.')); return Number.isFinite(n)?n:null }
+function rFmt(x,d=2){ return Number.isFinite(x)?x.toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d}):'—' }
+
+// Regressione lineare y=a*x+b (equivalente LINEST). Ritorna {a,b,r2}
+function linfit(xs,ys){
+  let n=0,sx=0,sy=0,sxx=0,sxy=0,syy=0;
+  for(let i=0;i<xs.length;i++){ let x=xs[i],y=ys[i]; if(!Number.isFinite(x)||!Number.isFinite(y))continue;
+    n++;sx+=x;sy+=y;sxx+=x*x;sxy+=x*y;syy+=y*y; }
+  if(n<2)return null;
+  let den=n*sxx-sx*sx; if(den===0)return null;
+  let a=(n*sxy-sx*sy)/den, b=(sy-a*sx)/n;
+  let ssTot=syy-sy*sy/n, ssRes=0;
+  for(let i=0;i<xs.length;i++){ let x=xs[i],y=ys[i]; if(!Number.isFinite(x)||!Number.isFinite(y))continue; let yp=a*x+b; ssRes+=(y-yp)*(y-yp); }
+  let r2=ssTot>0?1-ssRes/ssTot:1;
+  return {a,b,r2};
+}
+
+// Precompila i campi editabili dalla sessione (ROI sul range, uniformità, ghost)
+function reportPrefillFromSession(){
+  qcSyncContext();
+  const rr=qcSession.measurements.roiRange||[];
+  // Ogni immagine (slice) del range: prendi la prima ROI misurata → PV medio & SD
+  if(rr.length){
+    const byImg=new Map();
+    for(const r of rr){ if(!byImg.has(r.image))byImg.set(r.image,r); }
+    const imgs=[...byImg.keys()].sort((a,b)=>a-b).slice(0,6);
+    imgs.forEach((im,i)=>{ const r=byImg.get(im);
+      if(reportManual.stp[i]){ if(reportManual.stp[i].pv==='')reportManual.stp[i].pv=r.mean;
+        if(reportManual.stp[i].sd==='')reportManual.stp[i].sd=r.sd; } });
+  }
+  // Uniformità: cerca 2,5 e 10 µGy nelle etichette
+  for(const u of (qcSession.measurements.uniformity||[])){
+    const lbl=(u.doseLabel||'').toString();
+    const is25=/2[.,]?5/.test(lbl), is10=/(^|[^.,\d])10/.test(lbl);
+    if(is25){ if(reportManual.nuls25==='')reportManual.nuls25=u.NULS!=null?u.NULS*100:''; if(reportManual.nugs25==='')reportManual.nugs25=u.NUGS!=null?u.NUGS*100:''; }
+    else if(is10){ if(reportManual.nuls10==='')reportManual.nuls10=u.NULS!=null?u.NULS*100:''; if(reportManual.nugs10==='')reportManual.nugs10=u.NUGS!=null?u.NUGS*100:''; }
+  }
+  if(reportManual.badpixel===''&&qcSession.measurements.badPixels)reportManual.badpixel=qcSession.measurements.badPixels.count;
+  // Ghost → medie ROI (schema Excel: ROI2immBuio, ROI3immIRR, ROI4immBuio)
+  const g=qcSession.measurements.ghost||[];
+  const find=n=>g.find(x=>x.name===n);
+  if(reportManual.roi2buio===''&&find('ROI2immBuio'))reportManual.roi2buio=find('ROI2immBuio').mean;
+  if(reportManual.roi3irr===''&&find('ROI3immIRR'))reportManual.roi3irr=find('ROI3immIRR').mean;
+  if(reportManual.roi4buio===''&&find('ROI4immBuio'))reportManual.roi4buio=find('ROI4immBuio').mean;
+}
+
+/* Sincronizza le misure dello Step 2 nella scheda acquisizione e aggiorna la UI.
+   Chiamata automaticamente dopo ogni analisi (ROI range, uniformità, ghost). */
+function syncSessionToAcq(){
+  if(typeof reportManual==='undefined'||!reportManual)return;
+  try{ reportPrefillFromSession(); reportSave(); }catch(e){}
+  try{ if(typeof acqRenderStp==='function')acqRenderStp(); }catch(e){}
+  try{ if(typeof renderMissionDashboard==='function')renderMissionDashboard(); }catch(e){}
+  try{ if(document.body.classList.contains('step-3'))reportRender(); }catch(e){}
+}
+
+// Calcola tutte le grandezze derivate del report (come le formule Excel)
+function reportCompute(){
+  const m=reportManual;
+  const karia=m.stp.map(r=>rNum(r.karia)), pv=m.stp.map(r=>rNum(r.pv)), ei=m.stp.map(r=>rNum(r.ei));
+  // punti validi
+  const idx=[...karia.keys()].filter(i=>karia[i]!=null&&pv[i]!=null);
+  const xPV=idx.map(i=>m.curvaPV==='LOG'?Math.log(karia[i]):karia[i]);
+  const yPV=idx.map(i=>pv[i]);
+  const fitPV=linfit(xPV,yPV);
+  const idxE=[...karia.keys()].filter(i=>karia[i]!=null&&ei[i]!=null);
+  const xEI=idxE.map(i=>m.curvaEI==='LOG'?Math.log(karia[i]):karia[i]);
+  const yEI=idxE.map(i=>ei[i]);
+  const fitEI=linfit(xEI,yEI);
+  // PV teorico per ogni riga
+  const pvTeorico=karia.map(k=>{ if(k==null||!fitPV)return null; let x=m.curvaPV==='LOG'?Math.log(k):k; return fitPV.a*x+fitPV.b; });
+  // Ripetibilità EI: Karia calcolato da EI  -> (EI-d)/c  (LIN)  oppure  exp((EI-d)/c) (LOG)
+  const repKaria=m.rep.map(r=>{ let e=rNum(r.ei); if(e==null||!fitEI)return null;
+    if(m.curvaEI==='LOG')return Math.exp((e-fitEI.b)/fitEI.a); return (e-fitEI.b)/fitEI.a; });
+  const repMean=(()=>{ let v=repKaria.filter(x=>x!=null); return v.length?v.reduce((a,b)=>a+b,0)/v.length:null; })();
+  const repDiffK=repKaria.map((x)=>x!=null&&repMean?(x-repMean)/repMean*100:null); // diff % dal <K>
+  const repDiffKaria=m.rep.map((r,i)=>{ let x=repKaria[i],c=rNum(r.karia); return (x!=null&&c)?(x-c)/c*100:null; });
+  // Lag additivo (ghost): ABS((ROI2buio - ROI4buio)/ROI3irr *100)
+  const r2=rNum(m.roi2buio),r3=rNum(m.roi3irr),r4=rNum(m.roi4buio);
+  const lag=(r2!=null&&r3!=null&&r4!=null&&r3!==0)?Math.abs((r2-r4)/r3*100):null;
+  return {fitPV,fitEI,pvTeorico,repKaria,repMean,repDiffK,repDiffKaria,lag,karia,pv,ei};
+}
+
+/* Valutazione esito per ogni test: 'ok' | 'warn' | 'na'.
+   Ritorna elenco {id,label,status,detail} + giudizio complessivo suggerito. */
+function reportOutcomes(){
+  const m=reportManual, c=reportCompute();
+  const items=[];
+  const push=(id,label,status,detail)=>items.push({id,label,status,detail:detail||''});
+  const n=v=>rNum(v);
+  // STP linearità
+  if(c.fitPV){ const ok=c.fitPV.r2>0.98; push('stp','Funzione di risposta (STP)',ok?'ok':'warn',`R² = ${rFmt(c.fitPV.r2,4)} (toll. > 0,98)`); }
+  else push('stp','Funzione di risposta (STP)','na','Dati STP incompleti');
+  // Ripetibilità EI: |Diff.% dal <K>| < 10 e |dal Karia| < 20
+  { const dk=c.repDiffK.filter(x=>x!=null), dka=c.repDiffKaria.filter(x=>x!=null);
+    if(dk.length||dka.length){ const maxDk=Math.max(...dk.map(Math.abs),0), maxDka=Math.max(...dka.map(Math.abs),0);
+      const ok=maxDk<10&&maxDka<20; push('rep','Ripetibilità indicatore EI',ok?'ok':'warn',`max |Δ<K>| ${rFmt(maxDk,1)}% (<10) · max |ΔKaria| ${rFmt(maxDka,1)}% (<20)`); }
+    else push('rep','Ripetibilità indicatore EI','na','Dati ripetibilità incompleti'); }
+  // Uniformità: NULS<4, NUGS<8 sui due livelli
+  { const vals=[['nuls25',4,'NULS 2,5'],['nugs25',8,'NUGS 2,5'],['nuls10',4,'NULS 10'],['nugs10',8,'NUGS 10']];
+    let any=false,bad=false,det=[];
+    vals.forEach(([k,lim,lab])=>{ const v=n(m[k]); if(v!=null){any=true; const o=v<lim; if(!o)bad=true; det.push(`${lab}=${rFmt(v,2)}% (<${lim})`);} });
+    push('unif','Non uniformità (NULS/NUGS)',!any?'na':(bad?'warn':'ok'),det.join(' · ')||'Dati uniformità mancanti'); }
+  // Bad pixel + artefatti
+  { const bp=n(m.badpixel); const art=/^s/i.test(m.artefattiUnif||'');
+    push('bad','Bad pixel / artefatti', (bp==null&&!m.artefattiUnif)?'na':((art)?'warn':'ok'), `Bad pixel: ${m.badpixel||'—'} · Artefatti: ${m.artefattiUnif||'—'}`); }
+  // Basso contrasto: >=7 oggetti su tutte le righe compilate
+  { const objs=m.contrast.map(r=>n(r.obj)).filter(x=>x!=null);
+    if(objs.length){ const ok=objs.every(x=>x>=7); push('contrast','Sensibilità basso contrasto',ok?'ok':'warn',`min oggetti ${Math.min(...objs)} (≥ 7)`); }
+    else push('contrast','Sensibilità basso contrasto','na','Oggetti visibili non inseriti'); }
+  // Ghost: lag < 0.5
+  { if(c.lag!=null){ const ok=c.lag<0.5; push('ghost','Persistenza immagini latenti',ok?'ok':'warn',`Lag additivo ${rFmt(c.lag,3)}% (< 0,5)`); }
+    else push('ghost','Persistenza immagini latenti','na','ROI ghost non inserite'); }
+  const nOk=items.filter(x=>x.status==='ok').length;
+  const nWarn=items.filter(x=>x.status==='warn').length;
+  const nNa=items.filter(x=>x.status==='na').length;
+  let overall = nWarn>0 ? 'warn' : (nNa===items.length ? 'na' : (nNa>0?'partial':'ok'));
+  const suggerito = nWarn>0 ? 'da verificare' : (overall==='ok' ? 'adeguato' : 'incompleto');
+  return {items,nOk,nWarn,nNa,overall,suggerito};
+}
+
+/* Checklist dinamica: cosa manca prima di generare il report. */
+function reportChecklist(){
+  const m=reportManual; const has=v=>v!==''&&v!=null&&String(v).trim()!=='';
+  const grp=(label,filled,total,hint)=>({label,filled,total,ok:filled>=total,hint:hint||''});
+  const g=[];
+  // Identificativi
+  { const keys=['azienda','sala','unita','dittaModello','serieTubo','operatore','dataControllo'];
+    g.push(grp('Dati identificativi',keys.filter(k=>has(m[k])).length,keys.length,'Azienda, sala, modello, operatore, data')); }
+  // Setup
+  { const keys=['tipoDR','filtrazione','protocollo','kv']; const dist = has(m.fuoriPotter)||has(m.lettino)||has(m.stativo);
+    g.push(grp('Geometria e setup',keys.filter(k=>has(m[k])).length+(dist?1:0),keys.length+1,'Tipo DR, filtro, protocollo, kV, distanza')); }
+  // STP (Karia + mAs su tutte e 6)
+  { let f=0; m.stp.forEach(r=>{ if(has(r.karia)&&has(r.mas))f++; });
+    g.push(grp('STP · Karia e mAs (6 punti)',f,6,'Compila Karia da Piranha e mAs per le 6 dosi')); }
+  // EI (6)
+  { let f=m.stp.filter(r=>has(r.ei)).length; g.push(grp('EI (6 valori)',f,6,'Segna l’EI di ciascuna immagine')); }
+  // Ripetibilità (2)
+  { let f=m.rep.slice(0,2).filter(r=>has(r.ei)).length; g.push(grp('Ripetibilità EI (2)',f,2,'2 EI a 2,5 µGy')); }
+  // Uniformità (dallo Step 2 o manuale)
+  { const keys=['nuls25','nugs25','nuls10','nugs10']; g.push(grp('Uniformità NULS/NUGS',keys.filter(k=>has(m[k])).length,keys.length,'Dal modulo Non uniformità (Step 2)')); }
+  // Bad pixel
+  { g.push(grp('Bad pixel',has(m.badpixel)?1:0,1,'Dallo Step 2 o manuale')); }
+  // Contrasto (3 righe obj)
+  { let f=m.contrast.filter(r=>has(r.obj)).length; g.push(grp('Basso contrasto (oggetti)',f,3,'N. inserti visibili per 3 dosi')); }
+  // Ghost
+  { const keys=['roi2buio','roi3irr','roi4buio']; g.push(grp('Ghost (ROI)',keys.filter(k=>has(m[k])).length,keys.length,'Dallo Step 2 (misura ghost)')); }
+  const totF=g.reduce((a,b)=>a+Math.min(b.filled,b.total),0), totT=g.reduce((a,b)=>a+b.total,0);
+  return {groups:g, pct: totT?Math.round(totF/totT*100):0, done:g.every(x=>x.ok)};
+}
+function renderMissionDashboard(){
+  const el=$('missionDash'); if(!el)return;
+  const cl=reportChecklist(); const oc=reportOutcomes();
+  const bars=cl.groups.map(gr=>{
+    const p=gr.total?Math.round(Math.min(gr.filled,gr.total)/gr.total*100):0;
+    return `<div class="mdRow ${gr.ok?'mdOk':''}">
+      <span class="mdIco">${gr.ok?'✓':'○'}</span>
+      <span class="mdLbl">${esc(gr.label)}</span>
+      <span class="mdBar"><span style="width:${p}%"></span></span>
+      <span class="mdCnt">${Math.min(gr.filled,gr.total)}/${gr.total}</span></div>`;
+  }).join('');
+  el.innerHTML=`<div class="mdHead">
+     <div class="mdTitle">🛰 Controllo missione</div>
+     <div class="mdGauge"><div class="mdGaugeBar"><span style="width:${cl.pct}%"></span></div><span class="mdPct">${cl.pct}%</span></div>
+    </div>
+    <div class="mdGrid">${bars}</div>
+    <div class="mdFoot">${cl.done?'<span class="mdReady">Tutti i dati richiesti sono presenti · pronto per il report</span>':'<span class="mdWait">Completa le voci evidenziate o importale da Excel/JSON</span>'} · esito attuale: <b>${oc.suggerito}</b>
+     <button id="mdGoReport" class="wizBtn" type="button" style="padding:5px 12px;font-size:12px;margin-left:8px">Vai al report →</button></div>`;
+  const b=$('mdGoReport'); if(b)b.onclick=()=>wizGoto(3);
+}
+
+// Grafico a dispersione con retta di regressione (SVG puro, offline).
+// pts: [{x,y}], fit: {a,b}, log: bool. Ritorna markup SVG.
+function svgScatter(pts,fit,opt){
+  opt=opt||{}; const W=360,H=230,mL=52,mR=14,mT=14,mB=40;
+  const valid=pts.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
+  if(valid.length<1){return `<div class="rpChartEmpty">Dati insufficienti per il grafico</div>`;}
+  const xs=valid.map(p=>p.x), ys=valid.map(p=>p.y);
+  let xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);
+  if(xmin===xmax){xmin-=1;xmax+=1;} if(ymin===ymax){ymin-=1;ymax+=1;}
+  const padX=(xmax-xmin)*0.08,padY=(ymax-ymin)*0.10;
+  xmin-=padX;xmax+=padX;ymin=Math.max(0,ymin-padY);ymax+=padY;
+  const X=v=>mL+(v-xmin)/(xmax-xmin)*(W-mL-mR);
+  const Y=v=>H-mB-(v-ymin)/(ymax-ymin)*(H-mT-mB);
+  // gridlines / ticks
+  let ticks='';const nT=4;
+  for(let i=0;i<=nT;i++){ let xv=xmin+(xmax-xmin)*i/nT, yv=ymin+(ymax-ymin)*i/nT;
+    ticks+=`<line x1="${X(xv).toFixed(1)}" y1="${mT}" x2="${X(xv).toFixed(1)}" y2="${H-mB}" class="rpGrid"/>`;
+    ticks+=`<line x1="${mL}" y1="${Y(yv).toFixed(1)}" x2="${W-mR}" y2="${Y(yv).toFixed(1)}" class="rpGrid"/>`;
+    ticks+=`<text x="${X(xv).toFixed(1)}" y="${H-mB+13}" class="rpTick" text-anchor="middle">${rFmt(xv,xv<10?1:0)}</text>`;
+    ticks+=`<text x="${mL-6}" y="${(Y(yv)+3).toFixed(1)}" class="rpTick" text-anchor="end">${rFmt(yv,0)}</text>`;
+  }
+  // retta di regressione
+  let line='';
+  if(fit){ const step=(xmax-xmin)/40; let pathPts=[];
+    for(let xv=xmin;xv<=xmax+1e-9;xv+=step){ let xx=opt.log?Math.log(xv):xv; let yy=fit.a*xx+fit.b; pathPts.push(`${X(xv).toFixed(1)},${Y(yy).toFixed(1)}`); }
+    line=`<polyline points="${pathPts.join(' ')}" class="rpFit"/>`;
+  }
+  const xlab=opt.xlab||'Karia (µGy)', ylab=opt.ylab||'';
+  const dots=valid.map(p=>`<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3.4" class="rpDot" data-px="${rFmt(p.x,2)}" data-py="${rFmt(p.y,2)}" data-xl="${esc(xlab)}" data-yl="${esc(ylab)}"><title>${esc(xlab)}: ${rFmt(p.x,2)} · ${esc(ylab)}: ${rFmt(p.y,2)}</title></circle>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" class="rpChart" data-vb="0 0 ${W} ${H}" data-w="${W}" data-h="${H}">
+    <rect x="${mL}" y="${mT}" width="${W-mL-mR}" height="${H-mT-mB}" class="rpPlot"/>
+    ${ticks}${line}${dots}
+    <text x="${(mL+(W-mR))/2}" y="${H-4}" class="rpAxis" text-anchor="middle">${esc(xlab)}</text>
+    <text x="14" y="${(mT+(H-mB))/2}" class="rpAxis" text-anchor="middle" transform="rotate(-90 14 ${(mT+(H-mB))/2})">${esc(ylab)}</text>
+  </svg>`;
+}
+// Rende interattivi i grafici SVG di un contenitore: hover tooltip + zoom rotellina + reset doppio clic.
+function bindChartInteractivity(root){
+  if(!root)return;
+  let tip=root.querySelector('.rpTip');
+  if(!tip){ tip=document.createElement('div'); tip.className='rpTip'; tip.style.display='none'; root.appendChild(tip); root.style.position='relative'; }
+  root.querySelectorAll('svg.rpChart').forEach(svg=>{
+    svg.querySelectorAll('.rpDot').forEach(dot=>{
+      dot.addEventListener('mouseenter',()=>{ tip.innerHTML=`${dot.dataset.xl}: <b>${dot.dataset.px}</b><br>${dot.dataset.yl}: <b>${dot.dataset.py}</b>`;
+        const r=dot.getBoundingClientRect(), rr=root.getBoundingClientRect();
+        tip.style.left=(r.left-rr.left+10)+'px'; tip.style.top=(r.top-rr.top-6)+'px'; tip.style.display='block'; });
+      dot.addEventListener('mouseleave',()=>{ tip.style.display='none'; });
+    });
+    // zoom con rotellina attorno al cursore
+    let scale=1, base=svg.getAttribute('data-vb').split(' ').map(Number);
+    svg.addEventListener('wheel',e=>{ e.preventDefault();
+      const rect=svg.getBoundingClientRect();
+      const fx=(e.clientX-rect.left)/rect.width, fy=(e.clientY-rect.top)/rect.height;
+      const factor=e.deltaY<0?0.85:1.18; scale=Math.min(1,Math.max(0.2,scale*factor));
+      const [bx,by,bw,bh]=base; const nw=bw*scale, nh=bh*scale;
+      let nx=bx+(bw-nw)*fx, ny=by+(bh-nh)*fy;
+      svg.setAttribute('viewBox',`${nx.toFixed(1)} ${ny.toFixed(1)} ${nw.toFixed(1)} ${nh.toFixed(1)}`);
+    },{passive:false});
+    svg.addEventListener('dblclick',()=>{ scale=1; svg.setAttribute('viewBox',svg.getAttribute('data-vb')); });
+  });
+}
+
+function reportRender(){
+  reportPrefillFromSession();
+  const m=reportManual, c=reportCompute();
+  const ed=(key,val,dec)=>`<span class="rpEditable" contenteditable="true" data-k="${key}">${val===''||val==null?'':(typeof val==='number'?rFmt(val,dec==null?2:dec):esc(String(val)))}</span>`;
+  const box=(checked)=>checked?'☒':'☐';
+  // checkbox mutuamente esclusiva: key=campo, value=opzione selezionabile
+  const chk=(key,value,label)=>{ const on=(reportManual[key]||'')===value;
+    return `<label class="rpBox"><span class="rpBoxMark" data-ck="${key}" data-cv="${esc(value)}">${on?'☒':'☐'}</span> ${esc(label)}</label>`; };
+  // Formattazione condizionale: verde entro soglia, giallo vicino al limite, rosso oltre.
+  //  mode 'max' → conforme se v<=limit; 'min' → conforme se v>=limit
+  //  warnFrac = frazione del limite entro cui è "al limite" (giallo). unit opzionale.
+  const cls=(v,limit,mode,warnFrac)=>{ if(!Number.isFinite(v)||!Number.isFinite(limit))return '';
+    warnFrac=warnFrac==null?0.15:warnFrac;
+    if(mode==='min'){ if(v>=limit)return (v<=limit*(1+warnFrac))?'rpVal-warn':'rpVal-ok'; return 'rpVal-bad'; }
+    // max
+    if(v<=limit)return (v>=limit*(1-warnFrac))?'rpVal-warn':'rpVal-ok'; return 'rpVal-bad'; };
+  const cf=(v,limit,mode,dec,unit,warnFrac)=>{ const c=cls(v,limit,mode,warnFrac);
+    const txt=Number.isFinite(v)?(rFmt(v,dec==null?2:dec)+(unit||'')):'—';
+    return `<span class="${c}">${txt}</span>`; };
+  const okBad=(v,ok)=>v==null?'—':`<span class="${ok?'rpOk':'rpBad'}">${rFmt(v,2)} %</span>`;
+
+  let stpRows=m.stp.map((r,i)=>`<tr>
+     <td>${ed('stp.'+i+'.mas',r.mas)}</td>
+     <td>${ed('stp.'+i+'.karia',r.karia)}</td>
+     <td>${ed('stp.'+i+'.pv',r.pv)}</td>
+     <td>${ed('stp.'+i+'.sd',r.sd)}</td>
+     <td class="rpCalc">${rFmt(c.pvTeorico[i],1)}</td>
+     <td>${ed('stp.'+i+'.ei',r.ei)}</td></tr>`).join('');
+
+  const absCls=(v,lim)=>Number.isFinite(v)?(Math.abs(v)<=lim?(Math.abs(v)>=lim*0.85?'rpVal-warn':'rpVal-ok'):'rpVal-bad'):'';
+  let repRows=m.rep.map((r,i)=>`<tr>
+     <td>${ed('rep.'+i+'.pv',r.pv)}</td>
+     <td>${ed('rep.'+i+'.ei',r.ei)}</td>
+     <td>${ed('rep.'+i+'.karia',r.karia)}</td>
+     <td class="rpCalc">${rFmt(c.repKaria[i],3)}</td>
+     <td class="rpCalc ${absCls(c.repDiffK[i],10)}">${rFmt(c.repDiffK[i],2)}</td>
+     <td class="rpCalc ${absCls(c.repDiffKaria[i],20)}">${rFmt(c.repDiffKaria[i],2)}</td></tr>`).join('');
+
+  let contrastRows=m.contrast.map((r,i)=>`<tr>
+     <td>${ed('contrast.'+i+'.karia',r.karia)}</td>
+     <td>${ed('contrast.'+i+'.mas',r.mas)}</td>
+     <td class="${cls(rNum(r.obj),7,'min',0.15)}">${ed('contrast.'+i+'.obj',r.obj)}</td></tr>`).join('');
+
+  const eqPV=m.curvaPV==='LOG'?'y = a·ln(x) + b':'y = a·x + b';
+  const eqEI=m.curvaEI==='LOG'?'y = c·ln(x) + d':'y = c·x + d';
+
+  // Punti per i grafici (Karia in ascissa)
+  const ptsPV=c.karia.map((k,i)=>({x:k,y:c.pv[i]})).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
+  const ptsEI=c.karia.map((k,i)=>({x:k,y:c.ei[i]})).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
+  const chartPV=svgScatter(ptsPV,c.fitPV,{log:m.curvaPV==='LOG',xlab:'Karia (µGy)',ylab:'<PV>'});
+  const chartEI=svgScatter(ptsEI,c.fitEI,{log:m.curvaEI==='LOG',xlab:'Karia (µGy)',ylab:'EI'});
+
+  // Tabella uniformità: mAs set / Karia (2 punti: 2,5 e 10 µGy → righe 2 e 4 STP)
+  const uniA=m.stp[1]||{}, uniB=m.stp[3]||{};
+
+  // Destinazione: report inline (Step 3) e/o modale, quelli presenti
+  const targets=[$('reportSheetInline'),$('reportSheet')].filter(Boolean);
+  const oc=reportOutcomes();
+  const dot=s=>`<span class="rpLed rpLed-${s}"></span>`;
+  const ledLabel={ok:'conforme',warn:'da verificare',na:'—',partial:'parziale'};
+  const summaryHtml=`<div class="rpSummary rpSum-${oc.overall}">
+    <div class="rpSummaryHead">
+      <span class="rpSummaryTitle">Esito complessivo</span>
+      <span class="rpSummaryBadge rpBadge-${oc.overall}">${oc.overall==='ok'?'CONFORME':(oc.overall==='warn'?'DA VERIFICARE':(oc.overall==='partial'?'INCOMPLETO':'DATI MANCANTI'))}</span>
+    </div>
+    <div class="rpSummaryGrid">
+      ${oc.items.map(it=>`<div class="rpSummaryItem" title="${esc(it.detail)}">${dot(it.status)}<span class="rpSumLbl">${esc(it.label)}</span><span class="rpSumSt">${ledLabel[it.status]||it.status}</span></div>`).join('')}
+    </div>
+    <div class="rpSummaryNote">Giudizio tecnico suggerito: <b>${oc.suggerito}</b> · ${oc.nOk} conformi · ${oc.nWarn} da verificare · ${oc.nNa} non valutati. La valutazione è automatica e va confermata dallo specialista.</div>
+   </div>`;
+  const html=`<div class="rpPage">
+   <h1 class="rpTitle">CONTROLLO DI QUALITÀ SU SISTEMI DIGITAL DIRECT RADIOGRAPHY</h1>
+   <div class="rpSub">${ed('tipoDR',m.tipoDR)}</div>
+   ${summaryHtml}
+
+   <div class="rpKV">
+    <div class="k">Controllo del</div><div>${fmtDateIT(m.dataControllo)}</div>
+    <div class="k">Azienda</div><div>${ed('azienda',m.azienda)}</div>
+    <div class="k">Sala / Unità operativa</div><div>${ed('sala',m.sala)}</div>
+    <div class="k">Unità</div><div>${ed('unita',m.unita)}</div>
+    <div class="k">Ditta / Modello</div><div>${ed('dittaModello',m.dittaModello)}</div>
+    <div class="k">Numero di serie tubo</div><div>${ed('serieTubo',m.serieTubo)}</div>
+    <div class="k">Operatore</div><div>${ed('operatore',m.operatore)}</div>
+    <div class="k">Software analisi</div><div>${ed('software',m.software)}</div>
+    <div class="k">Note</div><div>${ed('noteTesta',m.noteTesta)}</div>
+   </div>
+
+   <div class="rpSec">Condizioni di lavoro</div>
+   <div class="rpKV">
+    <div class="k">Protocollo di esame</div><div>${ed('protocollo',m.protocollo)}</div>
+    <div class="k">Griglia</div><div>${ed('griglia',m.griglia)}</div>
+    <div class="k">Filtrazione aggiuntiva</div><div>${ed('filtrazione',m.filtrazione)}</div>
+    <div class="k">DFR (cm)</div><div>${ed('dfr',m.dfr)}</div>
+    <div class="k">Tensione (kV)</div><div>${ed('kv',m.kv)}</div>
+   </div>
+
+   <div class="rpSec">Correnti di buio (DDR12 · Dark noise)</div>
+   <div class="rpNote">Ogni giorno, all'accensione, l'apparecchiatura esegue un test automatico del noise (mappa).</div>
+   <div class="rpKV"><div class="k">Esito test automatico</div><div>${ed('darkNoise',m.darkNoise)}</div></div>
+
+   <div class="rpSec">Funzione di conversione (Signal Transfer Property, STP)</div>
+   <div class="rpNote">Karia al detettore desiderabile: 1 - 2,5 - 5 - 10 - 20 - 30 µGy</div>
+   <table class="rpT">
+    <thead><tr><th>mAs set</th><th>Karia (µGy)</th><th>&lt;PV&gt;</th><th>SD</th><th>PV teorico</th><th>EI</th></tr></thead>
+    <tbody>${stpRows}</tbody>
+   </table>
+   <table class="rpT">
+    <thead><tr><th></th><th>Relazione</th><th>Coeff. 1</th><th>Coeff. 2</th><th>R²</th></tr></thead>
+    <tbody>
+     <tr><td class="lbl">Dipendenza PV da Karia (${ed('curvaPV',m.curvaPV)})</td><td>${eqPV}</td>
+       <td class="rpCalc">a = ${rFmt(c.fitPV?.a,3)}</td><td class="rpCalc">b = ${rFmt(c.fitPV?.b,3)}</td>
+       <td class="rpCalc ${cls(c.fitPV?.r2,0.98,'min',0.01)}">${rFmt(c.fitPV?.r2,4)}</td></tr>
+     <tr><td class="lbl">Dipendenza EI da Karia (${ed('curvaEI',m.curvaEI)})</td><td>${eqEI}</td>
+       <td class="rpCalc">c = ${rFmt(c.fitEI?.a,3)}</td><td class="rpCalc">d = ${rFmt(c.fitEI?.b,3)}</td>
+       <td class="rpCalc ${cls(c.fitEI?.r2,0.98,'min',0.01)}">${rFmt(c.fitEI?.r2,4)}</td></tr>
+    </tbody>
+   </table>
+   <div class="rpNote">Linearità della curva: R² &gt; 0,98 → ${c.fitPV&&c.fitPV.r2>0.98?'<span class="rpOk">conforme</span>':'<span class="rpBad">verificare</span>'}</div>
+
+   <div class="rpCharts">
+    <div class="rpChartBox"><div class="rpChartTitle">Dipendenza PV da Karia · ${esc(eqPV)}</div>${chartPV}
+     <div class="rpChartEq">a = ${rFmt(c.fitPV?.a,3)} · b = ${rFmt(c.fitPV?.b,3)} · R² = ${rFmt(c.fitPV?.r2,4)}</div></div>
+    <div class="rpChartBox"><div class="rpChartTitle">Dipendenza EI da Karia · ${esc(eqEI)}</div>${chartEI}
+     <div class="rpChartEq">c = ${rFmt(c.fitEI?.a,3)} · d = ${rFmt(c.fitEI?.b,3)} · R² = ${rFmt(c.fitEI?.r2,4)}</div></div>
+   </div>
+
+   <div class="rpSec">Calibrazione e ripetibilità dell'indicatore di esposizione (DDR01/05/06)</div>
+   <div class="rpNote">Karia al detettore desiderabile: 2,5 µGy</div>
+   <table class="rpT">
+    <thead><tr><th>&lt;PV&gt;</th><th>EI</th><th>Karia (µGy)</th><th>Karia da EI</th><th>Diff.% dal &lt;K&gt;</th><th>Diff.% dal Karia</th></tr></thead>
+    <tbody>${repRows}
+     <tr><td class="lbl" colspan="3">&lt;K&gt; medio</td><td class="rpCalc" colspan="3">${rFmt(c.repMean,3)} µGy</td></tr>
+    </tbody>
+   </table>
+   <div class="rpNote">Tolleranza Diff.% dal &lt;K&gt; &lt; 10% · dal Karia &lt; 20% (Acc. &lt; 20% / &lt; 50%)</div>
+
+   <div class="rpSec">Non uniformità di segnale e SNR (DDR07)</div>
+   <div class="rpNote">Karia al detettore desiderabile: 2,5 - 10 µGy</div>
+   <table class="rpT">
+    <thead><tr><th>mAs set</th><th>Karia (µGy)</th></tr></thead>
+    <tbody>
+     <tr><td>${ed('stp.1.mas',uniA.mas)}</td><td>${ed('stp.1.karia',uniA.karia)}</td></tr>
+     <tr><td>${ed('stp.3.mas',uniB.mas)}</td><td>${ed('stp.3.karia',uniB.karia)}</td></tr>
+    </tbody>
+   </table>
+   <table class="rpT">
+    <thead><tr><th>Indice</th><th>2,5 µGy (%)</th><th>Toll.</th><th>10 µGy (%)</th><th>Toll.</th></tr></thead>
+    <tbody>
+     <tr><td class="lbl">Uniformità di segnale differenziale (NULS)</td>
+       <td class="${cls(rNum(m.nuls25),4,'max')}">${ed('nuls25',m.nuls25)}</td><td>&lt; 4 %</td>
+       <td class="${cls(rNum(m.nuls10),4,'max')}">${ed('nuls10',m.nuls10)}</td><td>&lt; 4 %</td></tr>
+     <tr><td class="lbl">Uniformità di segnale globale (NUGS)</td>
+       <td class="${cls(rNum(m.nugs25),8,'max')}">${ed('nugs25',m.nugs25)}</td><td>&lt; 8 %</td>
+       <td class="${cls(rNum(m.nugs10),8,'max')}">${ed('nugs10',m.nugs10)}</td><td>&lt; 8 % · Acc. &lt; 20 %</td></tr>
+    </tbody>
+   </table>
+
+   <div class="rpSec">Analisi degli artefatti e bad pixel</div>
+   <div class="rpKV">
+    <div class="k">Bad pixel (N°)</div><div>${ed('badpixel',m.badpixel)}</div>
+    <div class="k">Artefatti (Sì/No)</div><div>${ed('artefattiUnif',m.artefattiUnif)}</div>
+   </div>
+
+   <div class="rpSec">Sensibilità a basso contrasto (DDR08 · TOR CDR)</div>
+   <table class="rpT">
+    <thead><tr><th>Karia (µGy)</th><th>mAs</th><th>Oggetti visibili</th></tr></thead>
+    <tbody>${contrastRows}</tbody>
+   </table>
+   <div class="rpNote">Accettabilità: ≥ 7 oggetti (pari a 2,7 %)</div>
+
+   <div class="rpSec">Persistenza di immagini latenti (Ghost)</div>
+   <div class="rpNote">Karia al detettore desiderabile: 2,5 µGy · Fantoccio: Pb</div>
+   <table class="rpT">
+    <thead><tr><th>ROI2 immBuio</th><th>ROI3 immIRR</th><th>ROI4 immBuio</th><th>Lag additivo</th><th>Toll.</th><th>Acc.</th></tr></thead>
+    <tbody><tr>
+     <td>${ed('roi2buio',m.roi2buio)}</td>
+     <td>${ed('roi3irr',m.roi3irr)}</td>
+     <td>${ed('roi4buio',m.roi4buio)}</td>
+     <td class="rpCalc ${cls(c.lag,0.5,'max',0.2)}">${rFmt(c.lag,4)} %</td>
+     <td>&lt; 0,5 %</td><td>&lt; 1 %</td>
+    </tr></tbody>
+   </table>
+
+   <div class="rpSec">Elaborazione e visualizzazione delle immagini</div>
+   <div class="rpKV"><div class="k">Artefatti (Sì/No)</div><div>${ed('artefattiVis',m.artefattiVis)}</div></div>
+
+   <div class="rpSec">Conclusioni</div>
+   <div class="rpNote">Giudizio sulla qualità tecnica delle attrezzature medico-radiologiche ai sensi dell'art.163 comma 5 del D.Lgs 31.07.2020 n.101:</div>
+   <div class="rpChoice">
+    ${chk('giudizioTecnica','adeguato','adeguato')}
+    ${chk('giudizioTecnica','non adeguato','non adeguato')}
+   </div>
+   <div class="rpKV"><div class="k">Note</div><div>${ed('noteTecnica',m.noteTecnica)}</div></div>
+   <div class="rpSign"><div class="sign"><div class="signName">${ed('firmaSpecialista',m.firmaSpecialista)}</div><div class="line">Lo Specialista in Fisica Medica</div></div></div>
+
+   <div class="rpNote" style="margin-top:22px">Giudizio di idoneità sull'uso clinico delle attrezzature medico-radiologiche ai sensi dell'art.163 comma 6 del D.Lgs 31.07.2020 n.101:</div>
+   <div class="rpChoice">
+    ${chk('idoneita','idoneo','idoneo')}
+    ${chk('idoneita','non idoneo','non idoneo')}
+    ${chk('idoneita','idoneo con limitazioni','idoneo con limitazioni')}
+   </div>
+
+   <div class="rpNote" style="margin-top:12px">Verifica del mantenimento dei criteri specifici di accettabilità dell'attrezzatura ai sensi dell'art.163 comma 10 del D.Lgs 31.07.2020 n.101:</div>
+   <div class="rpChoice">
+    ${chk('mantenimento','sì','sì')}
+    ${chk('mantenimento','no','no')}
+   </div>
+
+   <div class="rpNote" style="margin-top:12px">Opportuni interventi correttivi ai sensi dell'art.163 comma 12 del D.Lgs 31.07.2020 n.101:</div>
+   <div class="rpKV"><div class="k">Interventi</div><div>${ed('interventi',m.interventi)}</div></div>
+   <div class="rpKV"><div class="k">Note</div><div>${ed('noteFinali',m.noteFinali)}</div></div>
+
+   <div class="rpSign"><div class="sign"><div class="signName">${ed('firmaResponsabile',m.firmaResponsabile)}</div><div class="line">Il Responsabile dell'impianto radiologico</div></div></div>
+  </div>`;
+
+  // Scrive nelle destinazioni disponibili (inline + modale)
+  targets.forEach(t=>{ t.innerHTML=html;
+    t.querySelectorAll('.rpEditable').forEach(el=>{
+      el.addEventListener('blur',()=>{
+        const key=el.dataset.k, path=key.split('.'); let ref=reportManual;
+        for(let i=0;i<path.length-1;i++)ref=ref[path[i]];
+        const newVal=el.textContent.trim();
+        if(ref[path[path.length-1]]===newVal)return; // nessuna modifica: non rigenerare
+        ref[path[path.length-1]]=newVal;
+        reportSave();
+        // Solo i campi che alimentano calcoli/grafici richiedono il re-render.
+        // I testi liberi (note, giudizi, firme, identificativi) NON rigenerano l'HTML,
+        // così restano editabili e cancellabili senza che il nodo venga ricostruito.
+        const isCalc=/^(stp|rep|contrast)\./.test(key) || key==='curvaPV' || key==='curvaEI' ||
+                     key==='roi2buio' || key==='roi3irr' || key==='roi4buio' ||
+                     /^(nuls|nugs)/.test(key) || key==='badpixel';
+        if(typeof acqBind==='function'){acqBind();acqRenderStp&&acqRenderStp();}
+        if(isCalc){ reportRender(); }
+      });
+      el.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();el.blur();} });
+    });
+    bindChartInteractivity(t);
+    // checkbox esclusive delle conclusioni
+    t.querySelectorAll('.rpBoxMark').forEach(el=>{
+      el.style.cursor='pointer';
+      el.addEventListener('click',()=>{ const k=el.dataset.ck,v=el.dataset.cv;
+        reportManual[k]=(reportManual[k]===v)?'':v; reportSave(); reportRender(); });
+    });
+  });
+}
+
+function report(){ reportLoad(); reportRender(); if($('reportModal'))$('reportModal').classList.add('show'); }
+
+if($('generaReport'))$('generaReport').onclick=()=>wizGoto(3);
+if($('reportClose'))$('reportClose').onclick=()=>$('reportModal').classList.remove('show');
+if($('reportRefresh'))$('reportRefresh').onclick=()=>reportRender();
+if($('reportPrint'))$('reportPrint').onclick=()=>window.print();
+if($('reportModal'))$('reportModal').onclick=e=>{if(e.target===$('reportModal'))$('reportModal').classList.remove('show')};
+
+/* ---------- Salvataggio report come file HTML autonomo ---------- */
+function reportSaveHtml(){
+ reportRender();
+ const sheet=$('reportSheetInline')||$('reportSheet');
+ const pageHtml=sheet?sheet.innerHTML:'';
+ const css=`body{background:#eef2f7;font-family:'Segoe UI',system-ui,sans-serif;margin:0;padding:24px}
+  .rpPage{max-width:780px;margin:0 auto;background:#fff;color:#111;padding:26px 32px;box-shadow:0 6px 26px rgba(0,0,0,.2);font:12px/1.45 'Segoe UI',system-ui,sans-serif}
+  .rpTitle{text-align:center;font-size:15px;font-weight:800;margin:0 0 2px;color:#0b3a63}
+  .rpSub{text-align:center;font-size:12px;color:#2c5d86;margin:0 0 14px;font-weight:600}
+  .rpSec{font-size:12px;font-weight:800;text-transform:uppercase;color:#0b3a63;margin:16px 0 6px;padding:4px 8px;background:#e8f1fb;border-left:4px solid #2c74b3}
+  .rpKV{display:grid;grid-template-columns:190px minmax(0,1fr);gap:2px 8px;margin:4px 0;align-items:start}
+  .rpKV>div{min-width:0;padding:2px 0}.rpKV .k{color:#334;font-weight:600}
+  .rpEditable{background:transparent;border:0;padding:0;display:inline-block;max-width:100%;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;vertical-align:top;line-height:1.4}
+  .rpKV>div:nth-child(even) .rpEditable{display:block;width:100%}
+  .rpSummary{border:1px solid #c3d3e4;border-radius:8px;padding:12px 14px;margin:12px 0 6px;background:#f7fafd}
+  .rpSum-ok{border-left:5px solid #2a9d3f;background:#f1fbf3}.rpSum-warn{border-left:5px solid #d9a520;background:#fdf9ec}
+  .rpSum-partial{border-left:5px solid #2c74b3;background:#f1f7fc}.rpSum-na{border-left:5px solid #99a}
+  .rpSummaryHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .rpSummaryTitle{font-weight:800;color:#0b3a63;font-size:13px}
+  .rpSummaryBadge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;color:#fff}
+  .rpBadge-ok{background:#2a9d3f}.rpBadge-warn{background:#d9a520}.rpBadge-partial{background:#2c74b3}.rpBadge-na{background:#8892a0}
+  .rpSummaryGrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px}
+  .rpSummaryItem{display:flex;align-items:center;gap:7px;font-size:11px;color:#243}
+  .rpSumLbl{flex:1;color:#334}.rpSumSt{font-size:10px;color:#667;font-weight:700}
+  .rpLed{width:11px;height:11px;border-radius:50%;flex:none}.rpLed-ok{background:#2ecc55}.rpLed-warn{background:#f2c012}.rpLed-na{background:#c3ccd6}
+  .rpSummaryNote{font-size:10px;color:#667;margin-top:8px;line-height:1.5}
+  .rpVal-ok{color:#1a7d33;font-weight:700}.rpVal-warn{color:#b5730a;font-weight:700}.rpVal-bad{color:#c0392b;font-weight:800}
+  table.rpT{border-collapse:collapse;width:100%;margin:6px 0;font-size:11px}
+  table.rpT th,table.rpT td{border:1px solid #b9c6d6;padding:3px 6px;text-align:center}
+  table.rpT th{background:#dcebf7;color:#0b3a63}table.rpT td.lbl{text-align:left;font-weight:600;background:#f4f8fc}
+  .rpCalc{background:#fff6de}.rpOk{color:#1a7d33;font-weight:700}.rpBad{color:#c0392b;font-weight:700}
+  .rpNote{font-size:10.5px;color:#555;margin:4px 0}.rpSign{margin-top:34px;display:flex;justify-content:flex-end}
+  .rpSign .sign{width:270px}.rpSign .signName{min-height:22px;text-align:center;font-size:12px;color:#111;padding:2px 6px}
+  .rpSign .line{border-top:1px solid #333;padding-top:4px;width:270px;text-align:center;font-size:11px;color:#333}
+  .rpCharts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0 4px}
+  .rpChartBox{border:1px solid #c3d3e4;border-radius:5px;padding:8px;background:#fbfdff}
+  .rpChartTitle{font-size:10.5px;font-weight:700;color:#0b3a63;text-align:center;margin-bottom:4px}
+  .rpChartEq{font-size:10px;color:#555;text-align:center;margin-top:4px}
+  svg.rpChart{width:100%;height:auto;display:block}
+  svg.rpChart .rpPlot{fill:#fff;stroke:#b9c6d6}svg.rpChart .rpGrid{stroke:#e7eef6;stroke-width:1}
+  svg.rpChart .rpFit{fill:none;stroke:#c0392b;stroke-width:1.8}svg.rpChart .rpDot{fill:#2c74b3;stroke:#0b3a63;stroke-width:.7}
+  svg.rpChart .rpTick{font-size:8px;fill:#667}svg.rpChart .rpAxis{font-size:9px;fill:#334;font-weight:600}
+  .rpBox{display:inline-flex;gap:5px;align-items:center;font-size:11.5px;color:#222;font-weight:600}
+  .rpBoxMark{font-size:15px;line-height:1;color:#0b3a63}.rpChoice{display:flex;gap:16px;flex-wrap:wrap;margin:4px 0}`;
+ const doc=`<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Report CQ DR — ${esc(reportManual.sala||reportManual.azienda||'')}</title><style>${css}</style></head><body>${pageHtml}</body></html>`;
+ const blob=new Blob([doc],{type:'text/html'}),a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);
+ const stamp=(reportManual.dataControllo||new Date().toLocaleDateString('it-IT')).replace(/[\\/:]/g,'-');
+ a.download=`Report_CQ_DR_${stamp}.html`; a.click();
+ setTimeout(()=>URL.revokeObjectURL(a.href),1000); qcMarkExport('report-html','report salvato');
+}
+if($('reportPrintInline'))$('reportPrintInline').onclick=()=>window.print();
+if($('reportRefreshInline'))$('reportRefreshInline').onclick=()=>reportRender();
+if($('reportSaveInline'))$('reportSaveInline').onclick=reportSaveHtml;
+
+/* ---------- Trend storico + confronto controlli (archivio locale) ---------- */
+const ARCHIVE_STORE='flc_qc_archive_v1';
+function archiveLoad(){ try{return JSON.parse(localStorage.getItem(ARCHIVE_STORE))||[];}catch(e){return [];} }
+function archiveSaveAll(a){ try{localStorage.setItem(ARCHIVE_STORE,JSON.stringify(a));}catch(e){} }
+// snapshot compatto delle metriche chiave del controllo corrente
+function controlSnapshot(){
+  const m=reportManual,c=reportCompute();
+  return { at:new Date().toISOString(), data:m.dataControllo||'', sala:m.sala||m.azienda||'',
+    tipoDR:m.tipoDR||'',
+    r2PV:c.fitPV?c.fitPV.r2:null, r2EI:c.fitEI?c.fitEI.r2:null,
+    a:c.fitPV?c.fitPV.a:null, b:c.fitPV?c.fitPV.b:null, cc:c.fitEI?c.fitEI.a:null, dd:c.fitEI?c.fitEI.b:null,
+    nuls25:rNum(m.nuls25),nugs25:rNum(m.nugs25),nuls10:rNum(m.nuls10),nugs10:rNum(m.nugs10),
+    lag:c.lag, badpixel:rNum(m.badpixel), kMean:c.repMean };
+}
+// Bundle completo: dati di TUTTE e tre le pagine dell'HTML.
+//  - acquisizione (Step 1) e report (Step 3) = reportManual
+//  - analisi immagini (Step 2) = qcSession (misure ROI/uniformità/bad pixel/ghost)
+//  - esiti/checklist calcolati + snapshot metriche
+function fullBundle(){
+  reportLoad(); if(typeof qcSyncContext==='function'){try{qcSyncContext();}catch(e){}}
+  let outcomes=null, checklist=null, snap=null;
+  try{outcomes=reportOutcomes();}catch(e){}
+  try{checklist=reportChecklist();}catch(e){}
+  try{snap=controlSnapshot();}catch(e){}
+  return {
+    schema:'FLC-QC-CONTROLLO', version:2, savedAt:new Date().toISOString(),
+    report:reportManual,                                   // Step 1 + Step 3
+    session:(typeof qcSession!=='undefined'?qcSession:null),// Step 2
+    outcomes, checklist, snapshot:snap
+  };
+}
+function downloadJson(obj,filename){
+  const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function reportArchive(){
+  // 1) salva il JSON completo (tutte e tre le pagine)
+  const bundle=fullBundle();
+  const who=(reportManual.sala||reportManual.azienda||'controllo').toString().replace(/[^\w\-]+/g,'_').slice(0,40);
+  const stamp=(reportManual.dataControllo||new Date().toISOString().slice(0,10)).replace(/[\/:]/g,'-');
+  downloadJson(bundle,`FLC_QC_controllo_${who}_${stamp}.json`);
+  // 2) aggiunge uno snapshot allo storico locale (per il trend)
+  const arr=archiveLoad(); arr.push(bundle.snapshot||controlSnapshot()); archiveSaveAll(arr);
+  if(typeof qcMarkExport==='function')qcMarkExport('controllo-completo','archivio + json');
+  alert('Controllo completo salvato in JSON e archiviato nello storico ('+arr.length+' totali).');
+}
+// sparkline SVG per una serie di valori
+function sparkline(vals,opt){ opt=opt||{}; const W=180,H=38,p=4;
+  const v=vals.filter(x=>Number.isFinite(x)); if(v.length<1)return '<span class="tHist">—</span>';
+  let mn=Math.min(...v),mx=Math.max(...v); if(mn===mx){mn-=1;mx+=1;}
+  const X=i=>p+i/(Math.max(1,vals.length-1))*(W-2*p);
+  const Y=y=>H-p-(y-mn)/(mx-mn)*(H-2*p);
+  let pts=[],dots='';
+  vals.forEach((y,i)=>{ if(Number.isFinite(y)){ pts.push(`${X(i).toFixed(1)},${Y(y).toFixed(1)}`); dots+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(y).toFixed(1)}" r="2" fill="${opt.color||'#63e6ff'}"><title>${rFmt(y,3)}</title></circle>`; } });
+  return `<svg viewBox="0 0 ${W} ${H}" class="tSpark"><polyline points="${pts.join(' ')}" fill="none" stroke="${opt.color||'#63e6ff'}" stroke-width="1.6"/>${dots}</svg>`;
+}
+function reportShowTrend(){
+  const arr=archiveLoad(); const box=$('reportExtra'); if(!box)return;
+  if(!arr.length){ box.style.display='block'; box.innerHTML='<div class="rxTitle">Storico controlli</div><div class="rxEmpty">Nessun controllo archiviato. Usa <b>🗄 Archivia</b> per salvare il controllo corrente nello storico locale.</div>'; return; }
+  const series=(k)=>arr.map(x=>x[k]);
+  const rows=[
+    ['R² PV','r2PV'],['R² EI','r2EI'],
+    ['NULS 2,5%','nuls25'],['NUGS 2,5%','nugs25'],['NULS 10%','nuls10'],['NUGS 10%','nugs10'],
+    ['Lag ghost %','lag'],['<K> medio','kMean'],['Bad pixel','badpixel']
+  ].map(([lab,k])=>{ const s=series(k); const last=[...s].reverse().find(x=>Number.isFinite(x));
+    return `<div class="tRow"><span class="tLbl">${lab}</span>${sparkline(s)}<span class="tLast">${Number.isFinite(last)?rFmt(last,3):'—'}</span></div>`; }).join('');
+  const list=arr.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(fmtDateIT(x.data)||x.at.slice(0,10))}</td><td>${esc(x.sala||'')}</td><td>${x.r2PV!=null?rFmt(x.r2PV,4):'—'}</td><td>${x.lag!=null?rFmt(x.lag,3):'—'}</td></tr>`).join('');
+  box.style.display='block';
+  box.innerHTML=`<div class="rxHead"><div class="rxTitle">Storico controlli · andamento nel tempo (${arr.length})</div>
+     <button id="rxClearArch" class="tinybtn" type="button">Svuota storico</button></div>
+    <div class="tTrend">${rows}</div>
+    <table class="rxTable"><thead><tr><th>#</th><th>Data</th><th>Sala</th><th>R² PV</th><th>Lag %</th></tr></thead><tbody>${list}</tbody></table>`;
+  const cb=$('rxClearArch'); if(cb)cb.onclick=()=>{ if(confirm('Svuotare tutto lo storico locale dei controlli?')){archiveSaveAll([]);reportShowTrend();} };
+}
+// Confronto tra due sessioni JSON (accettazione vs costanza)
+function reportShowCompare(){
+  const box=$('reportExtra'); if(!box)return; box.style.display='block';
+  box.innerHTML=`<div class="rxTitle">Confronto controlli (accettazione vs costanza)</div>
+    <div class="rxCmpPick">
+      <label class="rxSlot">Controllo A (accettazione)<input type="file" id="cmpA" accept=".json"></label>
+      <label class="rxSlot">Controllo B (costanza)<input type="file" id="cmpB" accept=".json"></label>
+      <button id="cmpUseCurrentB" class="tinybtn" type="button">Usa il controllo corrente come B</button>
+    </div>
+    <div id="cmpResult" class="rxCmpResult"><div class="rxEmpty">Carica due file JSON salvati per vedere le variazioni %.</div></div>`;
+  let A=null,B=null;
+  const readJson=f=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>{try{res(JSON.parse(r.result));}catch(e){rej(e);}}; r.onerror=rej; r.readAsText(f); });
+  const getRep=obj=>obj&&obj.report?obj.report:obj;
+  const metrics=rep=>{ const save=reportManual; reportManual=Object.assign(reportDefaults(),rep); const c=reportCompute();
+    const out={ 'R² PV':c.fitPV?c.fitPV.r2:null,'a (PV)':c.fitPV?c.fitPV.a:null,'b (PV)':c.fitPV?c.fitPV.b:null,
+      'c (EI)':c.fitEI?c.fitEI.a:null,'d (EI)':c.fitEI?c.fitEI.b:null,
+      'NULS 2,5%':rNum(reportManual.nuls25),'NUGS 2,5%':rNum(reportManual.nugs25),
+      'NULS 10%':rNum(reportManual.nuls10),'NUGS 10%':rNum(reportManual.nugs10),
+      'Lag %':c.lag,'<K> medio':c.repMean }; reportManual=save; return out; };
+  function renderCmp(){ const res=$('cmpResult'); if(!res)return;
+    if(!A||!B){res.innerHTML='<div class="rxEmpty">Carica entrambi i controlli (o usa il corrente come B).</div>';return;}
+    const ma=metrics(getRep(A)), mb=metrics(getRep(B));
+    const rows=Object.keys(ma).map(k=>{ const va=ma[k],vb=mb[k];
+      let d='—',cls=''; if(Number.isFinite(va)&&Number.isFinite(vb)&&va!==0){ const dd=(vb-va)/Math.abs(va)*100; d=(dd>=0?'+':'')+rFmt(dd,1)+'%'; cls=Math.abs(dd)>10?'rxBad':'rxOk'; }
+      return `<tr><td class="lbl">${k}</td><td>${Number.isFinite(va)?rFmt(va,3):'—'}</td><td>${Number.isFinite(vb)?rFmt(vb,3):'—'}</td><td class="${cls}">${d}</td></tr>`; }).join('');
+    res.innerHTML=`<table class="rxTable"><thead><tr><th>Grandezza</th><th>A · accettaz.</th><th>B · costanza</th><th>Δ %</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="rxEmpty">Δ% oltre ±10% evidenziata. Confronto secondo lo schema dell'Excel (variazioni α/β e indici).</div>`;
+  }
+  $('cmpA').onchange=async e=>{ try{A=await readJson(e.target.files[0]);renderCmp();}catch(err){alert('JSON A non valido');} };
+  $('cmpB').onchange=async e=>{ try{B=await readJson(e.target.files[0]);renderCmp();}catch(err){alert('JSON B non valido');} };
+  $('cmpUseCurrentB').onclick=()=>{ B={report:reportManual}; renderCmp(); };
+}
+if($('reportArchive'))$('reportArchive').onclick=reportArchive;
+if($('reportTrend'))$('reportTrend').onclick=()=>{ const b=$('reportExtra'); if(b&&b.style.display==='block'&&b.dataset.mode==='trend'){b.style.display='none';b.dataset.mode='';} else {reportShowTrend();$('reportExtra').dataset.mode='trend';} };
+if($('reportCompare'))$('reportCompare').onclick=()=>{ const b=$('reportExtra'); if(b&&b.style.display==='block'&&b.dataset.mode==='cmp'){b.style.display='none';b.dataset.mode='';} else {reportShowCompare();$('reportExtra').dataset.mode='cmp';} };
+
+/* =========================================================================
+   WIZARD a 3 step + scheda acquisizione (Step 1)
+   ========================================================================= */
+function wizGoto(step){
+ document.body.classList.remove('step-1','step-2','step-3');
+ document.body.classList.add('step-'+step);
+ document.querySelectorAll('.wizStep').forEach(el=>{
+   const s=+el.dataset.step;
+   el.classList.toggle('active',s===step);
+   el.classList.toggle('done',s<step);
+ });
+ if(step===1){acqRenderStp();renderMissionDashboard();}
+ if(step===3)reportRender();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.wizStep').forEach(el=>el.onclick=()=>wizGoto(+el.dataset.step));
+document.querySelectorAll('[data-goto]').forEach(el=>el.onclick=()=>wizGoto(+el.dataset.goto));
+
+// Campi semplici della scheda acquisizione <-> reportManual
+const ACQ_SIMPLE=['tipoDR','dataControllo','azienda','sala','unita','dittaModello','serieTubo','operatore','software',
+  'protocollo','griglia','filtrazione','dfr','kv','noteTesta','curvaPV','curvaEI',
+  'fuoriPotter','lettino','stativo','ghostUgy','ghostKv','ghostMas','kvMin','masMin'];
+// Converte una data (ISO yyyy-mm-dd o gg/mm/aaaa) in formato italiano gg/mm/aaaa per il report
+function fmtDateIT(v){ if(!v)return ''; v=String(v).trim();
+ let m=v.match(/^(\d{4})-(\d{2})-(\d{2})$/); if(m)return `${m[3]}/${m[2]}/${m[1]}`;
+ return v; }
+// Converte una data in ISO yyyy-mm-dd (per input type=date). Accetta anche gg/mm/aaaa.
+function toISODate(v){ if(!v)return ''; v=String(v).trim();
+ if(/^\d{4}-\d{2}-\d{2}$/.test(v))return v;
+ let m=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+ if(m)return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+ return ''; }
+function acqBind(){
+ ACQ_SIMPLE.forEach(k=>{ const el=$('acq_'+k); if(!el)return;
+   if(el.type==='date'){ let iso=toISODate(reportManual[k]); el.value=iso; if(iso)reportManual[k]=iso; }
+   else el.value=reportManual[k]??'';
+   el.oninput=()=>{ reportManual[k]=el.value; reportSave(); if(typeof renderMissionDashboard==='function')renderMissionDashboard(); };
+   // Ghost a 2,5 µGy: kV e mAs sono condivisi con le altre tabelle allo stesso µGy
+   if(k==='ghostKv'||k==='ghostMas'||k==='ghostUgy'){
+     el.onchange=()=>{ reportManual[k]=el.value;
+       const u=normUgy(reportManual.ghostUgy||'2,5');
+       if(k==='ghostKv'&&typeof propagateByUgy==='function')propagateByUgy(u,'kv',el.value);
+       if(k==='ghostMas'&&typeof propagateByUgy==='function')propagateByUgy(u,'mas',el.value);
+       reportSave(); if(typeof acqRenderStp==='function')acqRenderStp();
+       if(typeof renderMissionDashboard==='function')renderMissionDashboard();
+     };
+   }
+ });
+}
+// Aggancia gli input di una tabella (array di oggetti in reportManual[arrKey])
+// µGy effettivo di una riga: valore inserito o, se vuoto, il default della posizione.
+const UGY_STP_DEF=['1','2,5','5','10','20','30'], UGY_REP_DEF=['2,5','2,5','2,5'], UGY_TOR_DEF=['1','2,5','10'];
+function normUgy(v){ const n=rNum(v); return n!=null?n:null; }
+function rowUgy(arrKey,i){
+ const m=reportManual; let r,def;
+ if(arrKey==='stp'){r=m.stp[i];def=UGY_STP_DEF[i];}
+ else if(arrKey==='rep'){r=m.rep[i];def=UGY_REP_DEF[i];}
+ else if(arrKey==='contrast'){r=m.contrast[i];def=UGY_TOR_DEF[i];}
+ if(!r)return null;
+ return normUgy(r.ugy!==''&&r.ugy!=null?r.ugy:def);
+}
+// Propaga un valore (kv/karia/mas) a TUTTE le righe con lo stesso µGy, in ogni tabella.
+// srcKey/srcIdx identificano la cella di origine (che non va toccata).
+function propagateByUgy(ugy,field,value,srcKey,srcIdx){
+ if(ugy==null||value===''||value==null)return;
+ const m=reportManual;
+ const apply=(arrKey,r,defUgy,idx)=>{ if(!r||!(field in r))return;
+   if(arrKey===srcKey && idx===srcIdx)return;           // non toccare la cella sorgente
+   const u=normUgy(r.ugy!==''&&r.ugy!=null?r.ugy:defUgy);
+   if(u===ugy) r[field]=value;                          // stesso µGy → allinea sempre
+ };
+ m.stp.forEach((r,i)=>apply('stp',r,UGY_STP_DEF[i],i));
+ m.rep.forEach((r,i)=>apply('rep',r,UGY_REP_DEF[i],i));
+ m.contrast.forEach((r,i)=>apply('contrast',r,UGY_TOR_DEF[i],i));
+ // Ghost (µGy = ghostUgy, default 2,5): kv e mas condivisi
+ const gU=normUgy(m.ghostUgy||'2,5');
+ if(gU===ugy){ if(field==='kv')m.ghostKv=value; if(field==='mas')m.ghostMas=value; }
+}
+// Riconciliazione globale: per ogni µGy raccoglie il valore noto di kV/Karia/mAs
+// da QUALSIASI tabella e lo replica in tutte le celle vuote con lo stesso µGy.
+// Serve dopo import Excel/JSON, caricamento e analisi, dove non c'è un evento onchange.
+function propagateAllShared(){
+ const m=reportManual;
+ const cells=[]; // {ugy, get, set} per ogni cella condivisa
+ m.stp.forEach((r,i)=>{ const u=normUgy(r.ugy!==''&&r.ugy!=null?r.ugy:UGY_STP_DEF[i]);
+   ['kv','karia','mas'].forEach(f=>cells.push({u,f,get:()=>r[f],set:v=>r[f]=v})); });
+ m.rep.forEach((r,i)=>{ const u=normUgy(r.ugy!==''&&r.ugy!=null?r.ugy:UGY_REP_DEF[i]);
+   ['kv','mas'].forEach(f=>cells.push({u,f,get:()=>r[f],set:v=>r[f]=v})); });
+ m.contrast.forEach((r,i)=>{ const u=normUgy(r.ugy!==''&&r.ugy!=null?r.ugy:UGY_TOR_DEF[i]);
+   ['kv','mas'].forEach(f=>cells.push({u,f,get:()=>r[f],set:v=>r[f]=v})); });
+ { const u=normUgy(m.ghostUgy||'2,5');
+   cells.push({u,f:'kv',get:()=>m.ghostKv,set:v=>m.ghostKv=v});
+   cells.push({u,f:'mas',get:()=>m.ghostMas,set:v=>m.ghostMas=v}); }
+ // valore di riferimento per (µGy, campo): il primo non vuoto trovato
+ const ref={};
+ cells.forEach(c=>{ if(c.u==null)return; const key=c.u+'|'+c.f; const val=c.get();
+   if(ref[key]===undefined && val!==''&&val!=null) ref[key]=val; });
+ // riempi le celle vuote con il riferimento
+ let changed=false;
+ cells.forEach(c=>{ if(c.u==null)return; const key=c.u+'|'+c.f; const val=c.get();
+   if((val===''||val==null) && ref[key]!==undefined){ c.set(ref[key]); changed=true; } });
+ return changed;
+}
+function acqBindTableInputs(bodyEl,arrKey){
+ bodyEl.querySelectorAll('input').forEach(inp=>{
+   const i=+inp.dataset.si, f=inp.dataset.sk;
+   // Salva ad ogni battitura (senza ridisegnare, per non perdere il focus)
+   inp.oninput=()=>{ reportManual[arrKey][i][f]=inp.value; reportSave();
+     if(typeof renderMissionDashboard==='function')renderMissionDashboard(); };
+   // Alla conferma (uscita dal campo) propaga kV/Karia/mAs alle righe con lo stesso µGy
+   inp.onchange=()=>{ reportManual[arrKey][i][f]=inp.value;
+     if(f==='kv'||f==='karia'||f==='mas'){ const u=rowUgy(arrKey,i); propagateByUgy(u,f,inp.value,arrKey,i); }
+     reportSave(); acqRenderStp();
+     if(typeof renderMissionDashboard==='function')renderMissionDashboard();
+   };
+ });
+}
+// Ricostruisce tutte le tabelle editabili dello Step 1 come nel foglio Excel.
+function acqRenderStp(){
+ if(typeof propagateAllShared==='function'){ if(propagateAllShared())reportSave(); }
+ const ic=(i,k,v)=>`<input data-si="${i}" data-sk="${k}" value="${esc(String(v??''))}">`;
+ // input cella con placeholder (valore d'esempio) — editabile, salvabile
+ const icp=(i,k,v,ph)=>`<input class="ugyIn" data-si="${i}" data-sk="${k}" value="${esc(String(v??''))}" placeholder="${esc(ph||'')}">`;
+ const UGY6=['1','2,5','5','10','20','30'], UGY_REP=['2,5','2,5'], UGY_TOR=['1','2,5','10'];
+ // STP: µGy | kV | Karia (Piranha) | mAs
+ const stpB=$('acqStpBody');
+ if(stpB){ stpB.innerHTML=reportManual.stp.map((r,i)=>`<tr>
+     <td class="ugy">${icp(i,'ugy',r.ugy,UGY6[i])}</td><td>${ic(i,'kv',r.kv)}</td><td>${ic(i,'karia',r.karia)}</td><td>${ic(i,'mas',r.mas)}</td></tr>`).join('');
+   acqBindTableInputs(stpB,'stp'); }
+ // EI: µGy | kV | EI | mAs  (stessa riga stp)
+ const eiB=$('acqEiBody');
+ if(eiB){ eiB.innerHTML=reportManual.stp.map((r,i)=>`<tr>
+     <td class="ugy">${icp(i,'ugy',r.ugy,UGY6[i])}</td><td>${ic(i,'kv',r.kv)}</td><td>${ic(i,'ei',r.ei)}</td><td>${ic(i,'mas',r.mas)}</td></tr>`).join('');
+   acqBindTableInputs(eiB,'stp'); }
+ // Ripetibilità: µGy | kV | EI | mAs  (2 righe usate)
+ const repB=$('acqRepBody');
+ if(repB){ repB.innerHTML=reportManual.rep.slice(0,2).map((r,i)=>`<tr>
+     <td class="ugy">${icp(i,'ugy',r.ugy,UGY_REP[i])}</td><td>${ic(i,'kv',r.kv)}</td><td>${ic(i,'ei',r.ei)}</td><td>${ic(i,'mas',r.mas)}</td></tr>`).join('');
+   acqBindTableInputs(repB,'rep'); }
+ // TOR CDR: µGy | kV | mAs
+ const torB=$('acqTorBody');
+ if(torB){ torB.innerHTML=reportManual.contrast.map((r,i)=>`<tr>
+     <td class="ugy">${icp(i,'ugy',r.ugy,UGY_TOR[i])}</td><td>${ic(i,'kv',r.kv)}</td><td>${ic(i,'mas',r.mas)}</td></tr>`).join('');
+   acqBindTableInputs(torB,'contrast'); }
+ // Aggiorna i campi Ghost (input semplici) con i valori eventualmente propagati
+ ['ghostUgy','ghostKv','ghostMas','kvMin','masMin'].forEach(k=>{ const el=$('acq_'+k); if(el&&document.activeElement!==el)el.value=reportManual[k]??''; });
+}
+function acqInit(){ reportLoad(); acqBind(); acqRenderStp(); }
+
+/* ---------- Salva / Carica dati inseriti (offline · offsite) ----------
+   Esporta un unico file JSON con i dati manuali del report (celle verdi/gialle)
+   e, se presenti, le misure della sessione. Ricaricabile su qualsiasi PC. */
+function acqSaveData(){
+ // Salva il JSON completo di tutte e tre le pagine (acquisizione + analisi + report)
+ const bundle=fullBundle();
+ const who=(reportManual.sala||reportManual.azienda||'controllo').toString().replace(/[^\w\-]+/g,'_').slice(0,40);
+ const stamp=(reportManual.dataControllo||new Date().toISOString().slice(0,10)).replace(/[\/:]/g,'-');
+ downloadJson(bundle,`FLC_QC_controllo_${who}_${stamp}.json`);
+ if(typeof qcMarkExport==='function')qcMarkExport('controllo-completo','salvataggio dati inseriti');
+}
+async function acqLoadData(file){
+ if(!file)return;
+ try{
+   let obj=JSON.parse(await file.text());
+   let rep = obj && obj.report ? obj.report : obj; // accetta anche JSON del solo report
+   if(!rep||typeof rep!=='object')throw new Error('File non valido.');
+   reportManual=Object.assign(reportDefaults(),rep);
+   reportSave();
+   // ripristina le misure della sessione (Step 2)
+   if(obj && obj.session && typeof obj.session==='object'){
+     try{ qcSession=obj.session; if(typeof qcUpdateStatus==='function')qcUpdateStatus(); }catch(e){}
+   }
+   acqBind(); acqRenderStp();
+   if(typeof renderMissionDashboard==='function')renderMissionDashboard();
+   if(document.body.classList.contains('step-3'))reportRender();
+   alert('Dati caricati correttamente (tutte le pagine).');
+ }catch(e){ alert('Impossibile caricare i dati: '+(e.message||e)); }
+}
+if($('acqSaveData'))$('acqSaveData').onclick=acqSaveData;
+if($('acqLoadData'))$('acqLoadData').onclick=()=>$('acqLoadFile').click();
+if($('acqLoadFile'))$('acqLoadFile').onchange=e=>{ let f=e.target.files[0]; acqLoadData(f); e.target.value=''; };
+
+/* ---------- CLEAN UP: azzera completamente tutto il registro ----------
+   Cancella scheda acquisizione, misure della sessione (Step 2), storico locale,
+   ROI e template salvati. Le preferenze di tema/zoom restano invariate. */
+function cleanUpAll(){
+ if(!confirm('CLEAN UP — Azzerare completamente tutti i dati?\n\nVerranno cancellati: dati della scheda di acquisizione, misure delle immagini (Step 2), ROI, storico dei controlli e report corrente.\n\nOperazione NON reversibile. Se vuoi conservarli, prima usa "Salva dati inseriti".'))return;
+ // 1) Report / scheda acquisizione
+ reportManual=reportDefaults(); try{localStorage.removeItem(REPORT_STORE);}catch(e){}
+ // 2) Sessione Step 2 (misure immagini)
+ try{ if(typeof qcResetSession==='function')qcResetSession(); }catch(e){}
+ try{ rois=[]; selectedRoi=-1; if(typeof refreshRoiList==='function')refreshRoiList(); if(typeof render==='function')render(); }catch(e){}
+ // 3) Storico controlli + template ROI salvati
+ try{localStorage.removeItem(ARCHIVE_STORE);}catch(e){}
+ try{localStorage.removeItem(ROI_STORE);}catch(e){}
+ // 4) Rigenera la UI pulita
+ reportSave();
+ try{ acqBind(); acqRenderStp(); }catch(e){}
+ try{ if(typeof renderMissionDashboard==='function')renderMissionDashboard(); }catch(e){}
+ try{ if(document.body.classList.contains('step-3'))reportRender(); }catch(e){}
+ try{ const ex=$('reportExtra'); if(ex){ex.style.display='none';ex.innerHTML='';ex.dataset.mode='';} }catch(e){}
+ try{ const im=$('acqImportMsg'); if(im)im.style.display='none'; }catch(e){}
+ alert('Registro azzerato. Puoi iniziare un nuovo controllo.');
+}
+if($('acqCleanUp'))$('acqCleanUp').onclick=cleanUpAll;
+
+/* =========================================================================
+   IMPORT DA EXCEL (.xlsx) — lettore ZIP + DEFLATE nativo (offline, no librerie)
+   Recupera dati identificativi, geometria del setup e tabelle dal vecchio
+   controllo. Usa DecompressionStream('deflate-raw') dei browser Chromium.
+   ========================================================================= */
+function zipEntries(buf){
+ const dv=new DataView(buf), u8=new Uint8Array(buf); const out={};
+ let i=0;
+ while(i+4<=u8.length){
+   const sig=dv.getUint32(i,true);
+   if(sig!==0x04034b50) break;
+   const flags=dv.getUint16(i+6,true);
+   const method=dv.getUint16(i+8,true);
+   const compSize=dv.getUint32(i+18,true);
+   const nameLen=dv.getUint16(i+26,true);
+   const extraLen=dv.getUint16(i+28,true);
+   const nameStart=i+30;
+   const name=new TextDecoder().decode(u8.subarray(nameStart,nameStart+nameLen));
+   const dataStart=nameStart+nameLen+extraLen;
+   let realComp=compSize;
+   if(compSize===0 && (flags&0x08)){
+     let j=dataStart;
+     while(j+4<=u8.length){ const s=dv.getUint32(j,true); if(s===0x08074b50||s===0x04034b50||s===0x02014b50)break; j++; }
+     realComp=j-dataStart;
+   }
+   out[name]={method, data:u8.subarray(dataStart,dataStart+realComp), flags};
+   i=dataStart+realComp;
+   if(flags&0x08){ if(dv.getUint32(i,true)===0x08074b50)i+=16; else i+=12; }
+ }
+ return out;
+}
+async function inflateRaw(u8){
+ if(typeof DecompressionStream==='undefined')throw new Error('Il browser non supporta la decompressione. Usa Chrome o Edge aggiornati, oppure carica un JSON.');
+ const ds=new DecompressionStream('deflate-raw');
+ const stream=new Blob([u8]).stream().pipeThrough(ds);
+ return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+async function readXlsx(file){
+ const buf=await file.arrayBuffer();
+ const entries=zipEntries(buf);
+ const dec=new TextDecoder();
+ async function xml(name){ const e=entries[name]; if(!e)return null;
+   let raw = e.method===0 ? e.data : await inflateRaw(e.data);
+   return new DOMParser().parseFromString(dec.decode(raw),'application/xml'); }
+ const ssDoc=await xml('xl/sharedStrings.xml'); const ss=[];
+ if(ssDoc){ ssDoc.querySelectorAll('si').forEach(si=>{ let t=''; si.querySelectorAll('t').forEach(n=>t+=n.textContent); ss.push(t); }); }
+ const wb=await xml('xl/workbook.xml'), rels=await xml('xl/_rels/workbook.xml.rels');
+ const relMap={}; if(rels)rels.querySelectorAll('Relationship').forEach(r=>relMap[r.getAttribute('Id')]=r.getAttribute('Target'));
+ const sheetFile={};
+ if(wb)wb.querySelectorAll('sheets > sheet').forEach(s=>{ const nm=s.getAttribute('name');
+   const rid=s.getAttribute('r:id')||s.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+   let tgt=relMap[rid]||''; if(tgt&&!tgt.startsWith('xl/'))tgt='xl/'+tgt.replace(/^\//,''); sheetFile[nm]=tgt; });
+ async function sheetCells(sheetName){
+   const f=sheetFile[sheetName]; if(!f)return null;
+   const doc=await xml(f); if(!doc)return null; const cells={};
+   doc.querySelectorAll('sheetData > row > c').forEach(c=>{
+     const ref=c.getAttribute('r'), t=c.getAttribute('t');
+     const v=c.querySelector('v'); let val='';
+     if(t==='inlineStr'){ const is=c.querySelector('is t'); val=is?is.textContent:''; }
+     else if(v!=null){ val = t==='s' ? (ss[parseInt(v.textContent)]||'') : v.textContent; }
+     if(ref)cells[ref]=val;
+   });
+   return cells;
+ }
+ return { sheets:Object.keys(sheetFile), sheetCells };
+}
+function excelSerialToISO(n){ n=parseFloat(n); if(!Number.isFinite(n))return '';
+ const d=new Date(Date.UTC(1899,11,30)+Math.round(n)*86400000);
+ return d.toISOString().slice(0,10); }
+function pick(cells,ref){ let v=cells?cells[ref]:undefined; return (v===undefined||v===null)?'':String(v); }
+function numIt(v){ if(v==='')return ''; let n=parseFloat(String(v).replace(',','.')); return Number.isFinite(n)?String(n).replace('.',','):v; }
+
+async function importFromXlsx(file){
+ const wbk=await readXlsx(file);
+ const rep=await wbk.sheetCells('Report');
+ const ins=await wbk.sheetCells('Inserimento dati');
+ if(!ins && !rep) throw new Error('Fogli "Report"/"Inserimento dati" non trovati nel file.');
+ const m=reportManual;
+ const setIf=(k,val)=>{ if(val!=='' && val!=null) m[k]=val; };
+ setIf('azienda',pick(rep,'C6')); setIf('sala',pick(rep,'C7')); setIf('unita',pick(rep,'C8'));
+ setIf('dittaModello',pick(rep,'C9')); setIf('serieTubo',pick(rep,'C10')); setIf('operatore',pick(rep,'C11'));
+ setIf('software',pick(rep,'C17'));
+ const dRaw=pick(rep,'C4'); if(dRaw){ const iso=/^\d+(\.\d+)?$/.test(dRaw)?excelSerialToISO(dRaw):toISODate(dRaw); if(iso)m.dataControllo=iso; }
+ setIf('tipoDR',pick(ins,'G3')); setIf('fuoriPotter',numIt(pick(ins,'H5')));
+ { let g=pick(ins,'H8'); if(g)m.griglia=/pres/i.test(g)?'Presente':'Assente'; }
+ setIf('lettino',numIt(pick(ins,'H10'))); setIf('stativo',numIt(pick(ins,'H11')));
+ setIf('filtrazione',pick(ins,'D15')); setIf('protocollo',pick(ins,'G17'));
+ setIf('dfr',numIt(pick(ins,'H5'))); setIf('kv',numIt(pick(ins,'G20')));
+ for(let i=0;i<6;i++){ const r=25+i;
+   const mas=numIt(pick(ins,'D'+r)), kar=numIt(pick(ins,'C'+r)), ei=numIt(pick(ins,'C'+(38+i)));
+   if(m.stp[i]){ if(mas!=='')m.stp[i].mas=mas; if(kar!=='')m.stp[i].karia=kar; if(ei!=='')m.stp[i].ei=ei;
+     if(!m.stp[i].kv)m.stp[i].kv=numIt(pick(ins,'G20')); }
+ }
+ [49,50].forEach((r,i)=>{ if(m.rep[i]){ const ei=numIt(pick(ins,'C'+r)); if(ei!=='')m.rep[i].ei=ei;
+   if(!m.rep[i].kv)m.rep[i].kv=numIt(pick(ins,'G20')); } });
+ // TOR CDR (Sensibilità basso contrasto): µGy B56/B57/B58, mAs C56/C57/C58
+ [56,57,58].forEach((r,i)=>{ if(m.contrast[i]){
+   const ug=numIt(pick(ins,'B'+r)); if(ug!=='')m.contrast[i].ugy=ug;
+   const cm=numIt(pick(ins,'C'+r)); if(cm!=='')m.contrast[i].mas=cm;
+   if(!m.contrast[i].kv)m.contrast[i].kv=numIt(pick(ins,'G20')); } });
+ { const gm=numIt(pick(ins,'C65')); if(gm!=='')m.ghostMas=gm;
+   const kvm=numIt(pick(ins,'C70')); if(kvm!=='')m.kvMin=kvm;
+   const mm=numIt(pick(ins,'C71')); if(mm!=='')m.masMin=mm; }
+ reportSave(); acqBind(); acqRenderStp();
+ return true;
+}
+async function acqHandleImportFile(file){
+ if(!file)return;
+ const name=(file.name||'').toLowerCase();
+ try{
+   if(name.endsWith('.json')){ await acqLoadData(file); showImportMsg('ok','Dati JSON caricati.'); return; }
+   if(name.endsWith('.xlsx')){ await importFromXlsx(file); showImportMsg('ok','Dati recuperati dal file Excel. Controlla e completa i campi mancanti.'); return; }
+   showImportMsg('err','Formato non riconosciuto: usa un file .xlsx o .json.');
+ }catch(e){ showImportMsg('err','Impossibile leggere il file: '+(e.message||e)); }
+}
+function showImportMsg(kind,text){ const el=$('acqImportMsg'); if(!el)return;
+ el.className='acqImportMsg '+kind; el.textContent=text; el.style.display='block';
+ if(kind==='ok')setTimeout(()=>{el.style.display='none';},6000); }
+if($('acqImportPick'))$('acqImportPick').onclick=()=>$('acqImportFile').click();
+if($('acqImportFile'))$('acqImportFile').onchange=e=>{ const f=e.target.files[0]; acqHandleImportFile(f); e.target.value=''; };
+(function(){ const dz=$('acqImport'); if(!dz)return;
+ ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('draghot');}));
+ ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('draghot');}));
+ dz.addEventListener('drop',e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; acqHandleImportFile(f); });
+})();
+
+acqInit();
+wizGoto(1);
+
+/* ---------- Tema chiaro/scuro + zoom note operative (persistiti) ---------- */
+const THEME_STORE='flc_qc_theme_v1', NOTEZOOM_STORE='flc_qc_notezoom_v1';
+function applyTheme(mode){
+ const light=mode==='light';
+ document.body.classList.toggle('light',light);
+ const btn=$('themeToggle');
+ if(btn)btn.textContent=light?'☾ Scuro':'☀︎ Chiaro';
+ try{document.documentElement.style.colorScheme=light?'light':'dark';}catch(e){}
+ try{localStorage.setItem(THEME_STORE,mode);}catch(e){}
+}
+function applyNoteZoom(z){
+ z=Math.min(2.2,Math.max(1,z));
+ document.documentElement.style.setProperty('--noteZoom',String(z));
+ document.body.classList.toggle('bigNotes',z>1.001);
+ const lab=$('noteZoomLabel'); if(lab)lab.textContent=Math.round(z*100)+'%';
+ try{localStorage.setItem(NOTEZOOM_STORE,String(z));}catch(e){}
+ return z;
+}
+let noteZoom=1;
+(function initThemeZoom(){
+ let t='dark'; try{t=localStorage.getItem(THEME_STORE)||'dark';}catch(e){}
+ applyTheme(t);
+ let z=1; try{z=parseFloat(localStorage.getItem(NOTEZOOM_STORE))||1;}catch(e){}
+ noteZoom=applyNoteZoom(z);
+})();
+if($('themeToggle'))$('themeToggle').onclick=()=>applyTheme(document.body.classList.contains('light')?'dark':'light');
+if($('noteZoomIn'))$('noteZoomIn').onclick=()=>{noteZoom=applyNoteZoom(noteZoom+0.15);};
+if($('noteZoomOut'))$('noteZoomOut').onclick=()=>{noteZoom=applyNoteZoom(noteZoom-0.15);};
+
 $('ghostRun').onclick=()=>{
  if(!activePairs.length){alert('Carica prima il range di immagini.');return}
  $('ghostIrr').max=activePairs.length;$('ghostDark').max=activePairs.length;
- // default sensato se il range arriva almeno a 10; altrimenti ultime due
- if(activePairs.length>=10){$('ghostIrr').value=9;$('ghostDark').value=10}
+ // default: immagini 12 (irradiata) e 13 (buia); altrimenti ultime due
+ if(activePairs.length>=13){$('ghostIrr').value=12;$('ghostDark').value=13}
  else if(activePairs.length>=2){$('ghostIrr').value=Math.max(1,activePairs.length-1);$('ghostDark').value=activePairs.length}
  $('ghostModal').classList.add('show');
 };
