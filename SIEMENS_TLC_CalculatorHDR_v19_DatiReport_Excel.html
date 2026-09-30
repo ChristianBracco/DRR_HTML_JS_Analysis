@@ -110,6 +110,8 @@ table.rpT td.lbl{text-align:left;font-weight:600;background:#f4f8fc}
 .rpVal-bad{color:#c0392b;font-weight:800}
 td.rpVal-ok{background:#eefbf0}td.rpVal-warn{background:#fdf6e3}td.rpVal-bad{background:#fdeceb}
 .rpNote{font-size:10.5px;color:#555;margin:4px 0}
+.rpHint{font-size:11px;color:#8a5a00;background:#fff6de;border:1px solid #e6cf87;border-radius:6px;padding:5px 9px;margin:5px 0;line-height:1.5}
+.rpHint b{color:#7a4e00}
 .rpChoice{display:inline-flex;gap:14px;flex-wrap:wrap;margin:4px 0}
 .rpChoice label{display:inline-flex;gap:5px;align-items:center;font-weight:600}
 .rpSign{margin-top:34px;display:flex;justify-content:flex-end}
@@ -1618,27 +1620,51 @@ function syncSessionToAcq(){
 function reportCompute(){
   const m=reportManual;
   const karia=m.stp.map(r=>rNum(r.karia)), pv=m.stp.map(r=>rNum(r.pv)), ei=m.stp.map(r=>rNum(r.ei));
-  // punti validi
-  const idx=[...karia.keys()].filter(i=>karia[i]!=null&&pv[i]!=null);
-  const xPV=idx.map(i=>m.curvaPV==='LOG'?Math.log(karia[i]):karia[i]);
-  const yPV=idx.map(i=>pv[i]);
-  const fitPV=linfit(xPV,yPV);
-  const idxE=[...karia.keys()].filter(i=>karia[i]!=null&&ei[i]!=null);
-  const xEI=idxE.map(i=>m.curvaEI==='LOG'?Math.log(karia[i]):karia[i]);
-  const yEI=idxE.map(i=>ei[i]);
-  const fitEI=linfit(xEI,yEI);
-  // PV teorico per ogni riga
-  const pvTeorico=karia.map(k=>{ if(k==null||!fitPV)return null; let x=m.curvaPV==='LOG'?Math.log(k):k; return fitPV.a*x+fitPV.b; });
+  // Trasformazione dell'ascissa in base alla curva scelta.
+  // LOG: x = ln(Karia), definito solo per Karia > 0 → altrimenti null (punto scartato).
+  // LIN: x = Karia.
+  const xform=(k,curva)=>{ if(k==null)return null;
+    if(curva==='LOG'){ return k>0?Math.log(k):null; } return k; };
+  // Fit di una serie (Karia -> y) con una data curva ('LIN'|'LOG').
+  const fitFor=(yVals,curva)=>{
+    const ix=[...karia.keys()].filter(i=>karia[i]!=null&&yVals[i]!=null&&xform(karia[i],curva)!=null);
+    return linfit(ix.map(i=>xform(karia[i],curva)), ix.map(i=>yVals[i]));
+  };
+  const fitPV=fitFor(pv,m.curvaPV);
+  const fitEI=fitFor(ei,m.curvaEI);
+  // Fit con la curva ALTERNATIVA, per suggerire l'eventuale scelta migliore.
+  const altOf=curva=>curva==='LOG'?'LIN':'LOG';
+  const fitPVAlt=fitFor(pv,altOf(m.curvaPV)), curvaPVAlt=altOf(m.curvaPV);
+  const fitEIAlt=fitFor(ei,altOf(m.curvaEI)), curvaEIAlt=altOf(m.curvaEI);
+  // PV teorico per ogni riga: usa la stessa trasformazione del fit.
+  // Se l'ascissa non è definita (es. Karia<=0 in LOG) restituisce null → cella "—".
+  const pvTeorico=karia.map(k=>{ const x=xform(k,m.curvaPV);
+    if(x==null||!fitPV)return null; const y=fitPV.a*x+fitPV.b; return Number.isFinite(y)?y:null; });
   // Ripetibilità EI: Karia calcolato da EI  -> (EI-d)/c  (LIN)  oppure  exp((EI-d)/c) (LOG)
-  const repKaria=m.rep.map(r=>{ let e=rNum(r.ei); if(e==null||!fitEI)return null;
-    if(m.curvaEI==='LOG')return Math.exp((e-fitEI.b)/fitEI.a); return (e-fitEI.b)/fitEI.a; });
+  const repKaria=m.rep.map(r=>{ let e=rNum(r.ei); if(e==null||!fitEI||fitEI.a===0)return null;
+    const k=m.curvaEI==='LOG'?Math.exp((e-fitEI.b)/fitEI.a):(e-fitEI.b)/fitEI.a;
+    return Number.isFinite(k)?k:null; });
   const repMean=(()=>{ let v=repKaria.filter(x=>x!=null); return v.length?v.reduce((a,b)=>a+b,0)/v.length:null; })();
   const repDiffK=repKaria.map((x)=>x!=null&&repMean?(x-repMean)/repMean*100:null); // diff % dal <K>
   const repDiffKaria=m.rep.map((r,i)=>{ let x=repKaria[i],c=rNum(r.karia); return (x!=null&&c)?(x-c)/c*100:null; });
   // Lag additivo (ghost): ABS((ROI2buio - ROI4buio)/ROI3irr *100)
   const r2=rNum(m.roi2buio),r3=rNum(m.roi3irr),r4=rNum(m.roi4buio);
   const lag=(r2!=null&&r3!=null&&r4!=null&&r3!==0)?Math.abs((r2-r4)/r3*100):null;
-  return {fitPV,fitEI,pvTeorico,repKaria,repMean,repDiffK,repDiffKaria,lag,karia,pv,ei};
+  return {fitPV,fitEI,pvTeorico,repKaria,repMean,repDiffK,repDiffKaria,lag,karia,pv,ei,
+    fitPVAlt,curvaPVAlt,fitEIAlt,curvaEIAlt};
+}
+/* Suggerimento sulla scelta della curva (LIN/LOG).
+   Ritorna un messaggio se l'altra curva migliora sensibilmente R², oppure ''.
+   fit = fit corrente, fitAlt = fit con l'altra curva, curvaAlt = 'LIN'|'LOG'. */
+function curveHint(fit,fitAlt,curvaAlt){
+  const R2_MIN=0.98, GAIN=0.005; // migliora di almeno 0,5 punti di R²
+  if(!fitAlt||!Number.isFinite(fitAlt.r2))return '';
+  const r2=fit&&Number.isFinite(fit.r2)?fit.r2:-Infinity;
+  // Suggerisci solo se l'attuale non è già ottimo E l'altra è migliore
+  if(r2>=fitAlt.r2-1e-9)return '';
+  if(r2>=R2_MIN && fitAlt.r2-r2<GAIN)return '';
+  const meglio = fitAlt.r2>=R2_MIN ? 'conforme (R² > 0,98)' : 'con R² migliore';
+  return `Con curva <b>${curvaAlt}</b> il fit sarebbe ${meglio}: R² = ${rFmt(fitAlt.r2,4)} (attuale ${rFmt(r2,4)}). Valuta se cambiare tipo curva.`;
 }
 
 /* Valutazione esito per ogni test: 'ok' | 'warn' | 'na'.
@@ -1750,11 +1776,17 @@ function svgScatter(pts,fit,opt){
     ticks+=`<text x="${X(xv).toFixed(1)}" y="${H-mB+13}" class="rpTick" text-anchor="middle">${rFmt(xv,xv<10?1:0)}</text>`;
     ticks+=`<text x="${mL-6}" y="${(Y(yv)+3).toFixed(1)}" class="rpTick" text-anchor="end">${rFmt(yv,0)}</text>`;
   }
-  // retta di regressione
+  // retta di regressione — in scala LOG l'ascissa è ln(Karia): salta i punti
+  // con Karia<=0 o coordinate non finite (altrimenti la polyline si spezza).
   let line='';
   if(fit){ const step=(xmax-xmin)/40; let pathPts=[];
-    for(let xv=xmin;xv<=xmax+1e-9;xv+=step){ let xx=opt.log?Math.log(xv):xv; let yy=fit.a*xx+fit.b; pathPts.push(`${X(xv).toFixed(1)},${Y(yy).toFixed(1)}`); }
-    line=`<polyline points="${pathPts.join(' ')}" class="rpFit"/>`;
+    for(let xv=xmin;xv<=xmax+1e-9;xv+=step){
+      if(opt.log&&xv<=0)continue;
+      let xx=opt.log?Math.log(xv):xv; let yy=fit.a*xx+fit.b;
+      if(!Number.isFinite(xx)||!Number.isFinite(yy))continue;
+      pathPts.push(`${X(xv).toFixed(1)},${Y(yy).toFixed(1)}`);
+    }
+    if(pathPts.length>1)line=`<polyline points="${pathPts.join(' ')}" class="rpFit"/>`;
   }
   const xlab=opt.xlab||'Karia (µGy)', ylab=opt.ylab||'';
   const dots=valid.map(p=>`<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3.4" class="rpDot" data-px="${rFmt(p.x,2)}" data-py="${rFmt(p.y,2)}" data-xl="${esc(xlab)}" data-yl="${esc(ylab)}"><title>${esc(xlab)}: ${rFmt(p.x,2)} · ${esc(ylab)}: ${rFmt(p.y,2)}</title></circle>`).join('');
@@ -1909,6 +1941,8 @@ function reportRender(){
     </tbody>
    </table>
    <div class="rpNote">Linearità della curva: R² &gt; 0,98 → ${c.fitPV&&c.fitPV.r2>0.98?'<span class="rpOk">conforme</span>':'<span class="rpBad">verificare</span>'}</div>
+   ${(()=>{ const hPV=curveHint(c.fitPV,c.fitPVAlt,c.curvaPVAlt); return hPV?`<div class="rpHint">⚠︎ PV — ${hPV}</div>`:''; })()}
+   ${(()=>{ const hEI=curveHint(c.fitEI,c.fitEIAlt,c.curvaEIAlt); return hEI?`<div class="rpHint">⚠︎ EI — ${hEI}</div>`:''; })()}
 
    <div class="rpCharts">
     <div class="rpChartBox"><div class="rpChartTitle">Dipendenza PV da Karia · ${esc(eqPV)}</div>${chartPV}
@@ -2076,7 +2110,7 @@ function reportSaveHtml(){
   table.rpT th,table.rpT td{border:1px solid #b9c6d6;padding:3px 6px;text-align:center}
   table.rpT th{background:#dcebf7;color:#0b3a63}table.rpT td.lbl{text-align:left;font-weight:600;background:#f4f8fc}
   .rpCalc{background:#fff6de}.rpOk{color:#1a7d33;font-weight:700}.rpBad{color:#c0392b;font-weight:700}
-  .rpNote{font-size:10.5px;color:#555;margin:4px 0}.rpSign{margin-top:34px;display:flex;justify-content:flex-end}
+  .rpNote{font-size:10.5px;color:#555;margin:4px 0}.rpHint{font-size:10.5px;color:#8a5a00;background:#fff6de;border:1px solid #e6cf87;border-radius:6px;padding:5px 9px;margin:5px 0;line-height:1.5}.rpHint b{color:#7a4e00}.rpSign{margin-top:34px;display:flex;justify-content:flex-end}
   .rpSign .sign{width:270px}.rpSign .signName{min-height:22px;text-align:center;font-size:12px;color:#111;padding:2px 6px}
   .rpSign .line{border-top:1px solid #333;padding-top:4px;width:270px;text-align:center;font-size:11px;color:#333}
   .rpCharts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0 4px}
@@ -2495,32 +2529,119 @@ async function importFromXlsx(file){
  const ins=await wbk.sheetCells('Inserimento dati');
  if(!ins && !rep) throw new Error('Fogli "Report"/"Inserimento dati" non trovati nel file.');
  const m=reportManual;
+ // setIf: imposta sempre (sovrascrive) quando il valore importato non è vuoto
  const setIf=(k,val)=>{ if(val!=='' && val!=null) m[k]=val; };
+ // primo valore non vuoto tra più celle (Report ha priorità su Inserimento dati)
+ const first=(...vals)=>{ for(const v of vals){ if(v!=='' && v!=null) return v; } return ''; };
+ const kvDefault=numIt(pick(ins,'G20'))||numIt(pick(rep,'C27'));
+
+ /* ---- Dati identificativi (foglio Report) ---- */
  setIf('azienda',pick(rep,'C6')); setIf('sala',pick(rep,'C7')); setIf('unita',pick(rep,'C8'));
  setIf('dittaModello',pick(rep,'C9')); setIf('serieTubo',pick(rep,'C10')); setIf('operatore',pick(rep,'C11'));
  setIf('software',pick(rep,'C17'));
+ { const nt=pick(rep,'C13'); if(nt)setIf('noteTesta',nt); }
  const dRaw=pick(rep,'C4'); if(dRaw){ const iso=/^\d+(\.\d+)?$/.test(dRaw)?excelSerialToISO(dRaw):toISODate(dRaw); if(iso)m.dataControllo=iso; }
- setIf('tipoDR',pick(ins,'G3')); setIf('fuoriPotter',numIt(pick(ins,'H5')));
- { let g=pick(ins,'H8'); if(g)m.griglia=/pres/i.test(g)?'Presente':'Assente'; }
- setIf('lettino',numIt(pick(ins,'H10'))); setIf('stativo',numIt(pick(ins,'H11')));
- setIf('filtrazione',pick(ins,'D15')); setIf('protocollo',pick(ins,'G17'));
- setIf('dfr',numIt(pick(ins,'H5'))); setIf('kv',numIt(pick(ins,'G20')));
- for(let i=0;i<6;i++){ const r=25+i;
-   const mas=numIt(pick(ins,'D'+r)), kar=numIt(pick(ins,'C'+r)), ei=numIt(pick(ins,'C'+(38+i)));
-   if(m.stp[i]){ if(mas!=='')m.stp[i].mas=mas; if(kar!=='')m.stp[i].karia=kar; if(ei!=='')m.stp[i].ei=ei;
-     if(!m.stp[i].kv)m.stp[i].kv=numIt(pick(ins,'G20')); }
+
+ /* ---- Condizioni di lavoro / setup ---- */
+ setIf('tipoDR',first(pick(rep,'A2'),pick(ins,'G3')));
+ { let g=first(pick(rep,'B24'),pick(ins,'H8')); if(g)m.griglia=/pres/i.test(g)?'Presente':'Assente'; }
+ setIf('filtrazione',first(pick(rep,'B25'),pick(ins,'D15')));
+ setIf('protocollo',first(pick(rep,'B23'),pick(ins,'G17')));
+ setIf('dfr',first(numIt(pick(rep,'C26')),numIt(pick(ins,'H5'))));
+ setIf('kv',kvDefault);
+ // Distanze fuoco-detettore (foglio Inserimento dati)
+ setIf('fuoriPotter',numIt(pick(ins,'H5')));
+ setIf('lettino',numIt(pick(ins,'H10')));
+ setIf('stativo',numIt(pick(ins,'H11')));
+ // Tipo di curva (LIN/LOG) — Inserimento dati L14 (PV) / O14 (EI); fallback Report A48/A51
+ { const cp=(first(pick(ins,'L14'),pick(rep,'A48'))||'').toUpperCase(); if(/LOG/.test(cp))m.curvaPV='LOG'; else if(/LIN/.test(cp))m.curvaPV='LIN'; }
+ { const ce=(first(pick(ins,'O14'),pick(rep,'A51'))||'').toUpperCase(); if(/LOG/.test(ce))m.curvaEI='LOG'; else if(/LIN/.test(ce))m.curvaEI='LIN'; }
+
+ /* ---- STP: 6 punti — mAs, Karia (Piranha), <PV>, SD, EI ----
+    Foglio Report righe 40..45: A=mAs, B=Karia, C=<PV>, D=SD, F=EI.
+    Fallback Inserimento dati: mAs D25.., Karia C25.., EI C38.. */
+ for(let i=0;i<6;i++){
+   if(!m.stp[i])continue;
+   const rr=40+i, ir=25+i, er=38+i;
+   const mas =first(numIt(pick(rep,'A'+rr)), numIt(pick(ins,'D'+ir)));
+   const kar =first(numIt(pick(rep,'B'+rr)), numIt(pick(ins,'C'+ir)));
+   const pv  =numIt(pick(rep,'C'+rr));
+   const sd  =numIt(pick(rep,'D'+rr));
+   const ei  =first(numIt(pick(rep,'F'+rr)), numIt(pick(ins,'C'+er)));
+   if(mas!=='')m.stp[i].mas=mas;
+   if(kar!=='')m.stp[i].karia=kar;
+   if(pv !=='')m.stp[i].pv=pv;
+   if(sd !=='')m.stp[i].sd=sd;
+   if(ei !=='')m.stp[i].ei=ei;
+   if(!m.stp[i].kv&&kvDefault!=='')m.stp[i].kv=kvDefault;
  }
- [49,50].forEach((r,i)=>{ if(m.rep[i]){ const ei=numIt(pick(ins,'C'+r)); if(ei!=='')m.rep[i].ei=ei;
-   if(!m.rep[i].kv)m.rep[i].kv=numIt(pick(ins,'G20')); } });
- // TOR CDR (Sensibilità basso contrasto): µGy B56/B57/B58, mAs C56/C57/C58
- [56,57,58].forEach((r,i)=>{ if(m.contrast[i]){
-   const ug=numIt(pick(ins,'B'+r)); if(ug!=='')m.contrast[i].ugy=ug;
-   const cm=numIt(pick(ins,'C'+r)); if(cm!=='')m.contrast[i].mas=cm;
-   if(!m.contrast[i].kv)m.contrast[i].kv=numIt(pick(ins,'G20')); } });
+
+ /* ---- Ripetibilità EI (2,5 µGy) ----
+    Foglio Report righe 172..174: A=<PV>, B=EI, C=Karia (3 acquisizioni).
+    Fallback Inserimento dati: EI C49/C50, mAs D49/D50. */
+ for(let i=0;i<3;i++){
+   if(!m.rep[i])continue;
+   const rr=172+i, ir=49+i;
+   const pv =numIt(pick(rep,'A'+rr));
+   const ei =first(numIt(pick(rep,'B'+rr)), numIt(pick(ins,'C'+ir)));
+   const kar=numIt(pick(rep,'C'+rr));
+   const mas=numIt(pick(ins,'D'+ir));
+   if(pv !=='')m.rep[i].pv=pv;
+   if(ei !=='')m.rep[i].ei=ei;
+   if(kar!=='')m.rep[i].karia=kar;
+   if(mas!=='')m.rep[i].mas=mas;
+   if(!m.rep[i].kv&&kvDefault!=='')m.rep[i].kv=kvDefault;
+ }
+
+ /* ---- Uniformità NULS/NUGS (in %) ----
+    Foglio Report: C189/E189 = NULS 2,5 / 10 ; C190/E190 = NUGS 2,5 / 10 (già in %).
+    Fallback Inserimento dati: N54/N58 (NULS) e N55/N59 (NUGS) come frazioni → ×100. */
+ const asPct=v=>{ const n=rNum(v); return n==null?'':(Math.abs(n)<1?n*100:n); };
+ { const v=first(pick(rep,'C189'), (pick(ins,'N54')!==''?asPct(pick(ins,'N54')):'')); if(v!=='')m.nuls25=rNum(v); }
+ { const v=first(pick(rep,'C190'), (pick(ins,'N55')!==''?asPct(pick(ins,'N55')):'')); if(v!=='')m.nugs25=rNum(v); }
+ { const v=first(pick(rep,'E189'), (pick(ins,'N58')!==''?asPct(pick(ins,'N58')):'')); if(v!=='')m.nuls10=rNum(v); }
+ { const v=first(pick(rep,'E190'), (pick(ins,'N59')!==''?asPct(pick(ins,'N59')):'')); if(v!=='')m.nugs10=rNum(v); }
+
+ /* ---- Bad pixel e artefatti ---- */
+ { const bp=first(numIt(pick(rep,'C195')), numIt(pick(ins,'L69'))); if(bp!=='')m.badpixel=rNum(bp); }
+ { const art=pick(rep,'C196'); if(art)m.artefattiUnif=/^s/i.test(art)?'Sì':'No'; }
+ { const artV=pick(rep,'C224'); if(artV)m.artefattiVis=/^s/i.test(artV)?'Sì':'No'; }
+
+ /* ---- Sensibilità basso contrasto (TOR CDR) ----
+    Foglio Report righe 206..208: A=Karia, B=mAs, C=Oggetti visibili.
+    Oggetti visibili: fallback Inserimento dati M75/M76/M77. */
+ for(let i=0;i<3;i++){
+   if(!m.contrast[i])continue;
+   const rr=206+i, ir=75+i, br=56+i;
+   const kar=numIt(pick(rep,'A'+rr));
+   const mas=first(numIt(pick(rep,'B'+rr)), numIt(pick(ins,'C'+br)));
+   const obj=first(numIt(pick(rep,'C'+rr)), numIt(pick(ins,'M'+ir)));
+   const ug =numIt(pick(ins,'B'+br));
+   if(kar!=='')m.contrast[i].karia=kar;
+   if(mas!=='')m.contrast[i].mas=mas;
+   if(obj!=='')m.contrast[i].obj=obj;
+   if(ug !=='')m.contrast[i].ugy=ug;
+   if(!m.contrast[i].kv&&kvDefault!=='')m.contrast[i].kv=kvDefault;
+ }
+
+ /* ---- Ghost / persistenza immagini latenti ----
+    Foglio Inserimento dati N91..N94 = medie ROI1..ROI4.
+    ROI1immIRR (N91) non è usata dal calcolo lag ma la conserviamo se serve. */
+ { const r2=numIt(pick(ins,'N92')); if(r2!=='')m.roi2buio=rNum(r2);
+   const r3=numIt(pick(ins,'N93')); if(r3!=='')m.roi3irr=rNum(r3);
+   const r4=numIt(pick(ins,'N94')); if(r4!=='')m.roi4buio=rNum(r4); }
+ // Parametri acquisizione ghost / minimo carico
+ // mAs del ghost = mAs dell'acquisizione Pb a 2,5 µGy (Inserimento dati C65)
  { const gm=numIt(pick(ins,'C65')); if(gm!=='')m.ghostMas=gm;
    const kvm=numIt(pick(ins,'C70')); if(kvm!=='')m.kvMin=kvm;
-   const mm=numIt(pick(ins,'C71')); if(mm!=='')m.masMin=mm; }
+   const mm=numIt(pick(ins,'C71')); if(mm!=='')m.masMin=mm;
+   if(!m.ghostKv&&kvDefault!=='')m.ghostKv=kvDefault; }
+
+ // Riconcilia i valori condivisi (kV/Karia/mAs per stesso µGy) e ricalcola
+ if(typeof propagateAllShared==='function')propagateAllShared();
  reportSave(); acqBind(); acqRenderStp();
+ if(typeof renderMissionDashboard==='function')renderMissionDashboard();
+ if(document.body.classList.contains('step-3'))reportRender();
  return true;
 }
 async function acqHandleImportFile(file){
@@ -2528,7 +2649,7 @@ async function acqHandleImportFile(file){
  const name=(file.name||'').toLowerCase();
  try{
    if(name.endsWith('.json')){ await acqLoadData(file); showImportMsg('ok','Dati JSON caricati.'); return; }
-   if(name.endsWith('.xlsx')){ await importFromXlsx(file); showImportMsg('ok','Dati recuperati dal file Excel. Controlla e completa i campi mancanti.'); return; }
+   if(name.endsWith('.xlsx')){ await importFromXlsx(file); showImportMsg('ok','Excel importato: tutti i campi (anche misure e report) sono popolati. Ora puoi "Esporta dati JSON" per ottenere un CQ da confrontare con quello corrente.'); return; }
    showImportMsg('err','Formato non riconosciuto: usa un file .xlsx o .json.');
  }catch(e){ showImportMsg('err','Impossibile leggere il file: '+(e.message||e)); }
 }
