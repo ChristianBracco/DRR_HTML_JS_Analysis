@@ -1,220 +1,120 @@
-# Siemens FLC QC Viewer
+# 🛰 SIEMENS FLC QC Viewer — Console di Missione CQ
 
-Viewer locale e strumento di supporto ai **controlli di qualità (CQ) dei rivelatori digitali Siemens FLC**, sviluppato come singolo file HTML autocontenuto.
+```
+      .        .        *        .          .       .      *      .
+   .      ___________________          .        *        .     .
+        /                     \    .          .      .
+   *   |   FLC-QC-SESSION      |         ▲            .     *
+       |   [ ==== MISSION ==== ]|       ╱ ╲     .          .
+   .    \_____________________/       ╱███╲        *      .
+            |  |      |  |          ╱██▓▓▓██╲   .      .
+   .     ~~~~~~~~~~~~~~~~~~~~      ╱─────────╲        .    *
+```
 
-La versione attuale integra visualizzazione delle immagini, gestione delle ROI, analisi su serie di acquisizioni, uniformità, ghost, rinomina guidata delle immagini e raccolta strutturata delle misure in vista della generazione automatica del report.
+> **Rotta attuale:** v19 — Analisi CQ + Dati Report + Import Excel completo
+> **Ambiente operativo:** singolo file HTML, tutto a bordo, nessun collegamento a terra.
 
-> **Versione:** v19 — Analisi CQ + Dati Report
-
----
-
-## Obiettivo
-
-Il progetto nasce per rendere più semplice e riproducibile il flusso di lavoro dei controlli di qualità su immagini Siemens FLC.
-
-L'idea è mantenere un'interfaccia utilizzabile anche da operatori non esperti:
-
-1. caricare una singola immagine o una cartella;
-2. verificare e, se necessario, rinominare le acquisizioni;
-3. disegnare o richiamare le ROI;
-4. eseguire le analisi CQ;
-5. copiare i risultati in Excel oppure esportare l'intera sessione in JSON;
-6. in una versione successiva, generare direttamente il report finale.
-
-Tutte le elaborazioni vengono eseguite **localmente nel browser**.
+Benvenuto a bordo. Questo strumento è la **console di controllo qualità** per i rivelatori digitali **Siemens FLC**. Immagini, ROI, analisi, report e confronti viaggiano tutti dentro un unico file HTML autocontenuto: nessun server, nessun database, nessun upload. I dati radiologici restano nel tuo browser, come in una capsula sigillata.
 
 ---
 
-## Funzioni principali
+## 🌌 Missione
 
-### Visualizzazione Siemens FLC
+Rendere il controllo di qualità dei sistemi DR **semplice, riproducibile e tracciabile**, dal primo lancio (caricamento immagini) fino al rientro (report firmato).
 
-Supporta acquisizioni costituite da:
+Rotta di volo:
+
+```
+   ACQUISIZIONE ─▶ VERIFICA/RINOMINA ─▶ ANALISI ─▶ DATI STRUTTURATI ─▶ REPORT
+        Step 1            Step 1            Step 2         (FLC-QC-SESSION)     Step 3
+```
+
+Interfaccia pensata anche per operatori non esperti:
+
+1. carichi una singola immagine o una cartella;
+2. verifichi ed eventualmente rinomini le acquisizioni;
+3. disegni o richiami le ROI;
+4. esegui le analisi CQ;
+5. **precompili tutto da un vecchio Excel o JSON**;
+6. copi i risultati in Excel oppure esporti la sessione in JSON;
+7. generi il report finale.
+
+---
+
+## 🚀 Ponte di comando — le tre postazioni
+
+L'app è organizzata in **3 step** (wizard) con una **dashboard di missione** che mostra, a colpo d'occhio, quanto sei vicino al report pronto.
+
+- **Step 1 — Scheda acquisizione:** dati identificativi, condizioni di lavoro, tabelle STP / EI / ripetibilità / TOR CDR / ghost.
+- **Step 2 — Analisi immagini:** ROI sul range, non uniformità DR, bad pixel, ghost.
+- **Step 3 — Report:** foglio compilabile con calcoli automatici, grafici, esiti e firme.
+
+La **🛰 Controllo missione** calcola una percentuale di completamento e ti dice cosa manca prima del report.
+
+---
+
+## 🛰 Sensori di bordo — visualizzazione
+
+### Siemens FLC
+
+Gestisce le acquisizioni composte da:
 
 ```text
 file.hdr
-file
+file           (raster senza estensione)
 file.pp
 ```
 
-Il programma gestisce sia il raster senza estensione sia il file `.pp`.
-
-Sono disponibili preset per diverse matrici Siemens, tra cui:
+Preset per le principali matrici Siemens:
 
 - MAX mini — 1920 × 1520
 - MAX wi-D — 2350 × 2866
 - MAX static — 2868 × 2874
 - MAX dynamic RAD — 2840 × 2874
 - MAX dynamic FLU / DFR
-- FLC storage 3072 × 2657
+- FLC storage — 3072 × 2657
 
-Quando possibile vengono ricavati automaticamente dall'header:
+Dall'header proprietario `FLC_V7`, quando disponibili, ricava automaticamente: matrice, pixel spacing, data/ora, kVp, mAs, corrente tubo, tempo di esposizione (con controlli di plausibilità).
 
-- matrice;
-- pixel spacing;
-- data e ora di acquisizione;
-- kVp;
-- mAs;
-- corrente tubo;
-- tempo di esposizione.
+### DICOM
 
----
+Riconosce anche file DICOM, compresi quelli senza estensione `.dcm` se presente il preambolo. Transfer syntax **non compresse**:
 
-### Supporto DICOM
+- Implicit VR Little Endian
+- Explicit VR Little Endian
+- Explicit VR Big Endian
 
-Il viewer riconosce anche file DICOM, compresi file privi dell'estensione `.dcm` quando è presente il preambolo DICOM.
+Legge, quando presenti: Acquisition Date/Time, matrice, pixel spacing, Window Center/Width, kVp, Exposure Time, Tube Current, Exposure/mAs, SID e info su apparecchiatura/serie/istanza.
 
-Sono gestite le transfer syntax non compresse:
+Per i mAs, in ordine: **Exposure** `(0018,1152)` → **Exposure in µAs** `(0018,1153)` → calcolo `mA × ms / 1000`.
 
-- Implicit VR Little Endian;
-- Explicit VR Little Endian;
-- Explicit VR Big Endian.
-
-Il parser legge, quando disponibili:
-
-- Acquisition Date;
-- Acquisition Time;
-- matrice;
-- pixel spacing;
-- Window Center / Window Width;
-- kVp;
-- Exposure Time;
-- Tube Current;
-- Exposure / mAs;
-- SID;
-- informazioni su apparecchiatura, serie e istanza.
-
-Per i mAs vengono utilizzati, in ordine:
-
-1. **Exposure** `(0018,1152)`;
-2. **Exposure in µAs** `(0018,1153)`, convertito in mAs;
-3. calcolo da `mA × ms / 1000`, se necessario.
-
-### Limite attuale DICOM
-
-Non sono ancora decodificate le immagini DICOM compresse:
-
-- JPEG;
-- JPEG-LS;
-- JPEG 2000;
-- RLE.
+> **Limite:** i DICOM compressi (JPEG, JPEG-LS, JPEG 2000, RLE) non sono ancora decodificati.
 
 ---
 
-## Rinomina guidata delle acquisizioni
+## 🔧 Manovre di allineamento — rinomina guidata
 
-Il pulsante:
+Il pulsante `✎ Rinomina immagini` apre una cartella e costruisce la lista ordinata delle esposizioni.
 
-```text
-✎ Rinomina immagini
-```
+- **Ordinamento:** per `Acquisition Date + Acquisition Time`, per ricostruire la sequenza reale.
+- **Proposta nomi:** `1, 2, 3, …` (abitudine operativa), tutti modificabili.
+- **Info per esposizione:** progressivo, anteprima, data/ora, kVp, mAs, nome originale, componenti (HDR/RAW/PP o DICOM), nuovo nome.
 
-apre una cartella e costruisce una lista ordinata delle esposizioni.
+Una esposizione Siemens è un **unico oggetto logico**: `1.hdr`, `1`, `1.pp` mantengono sempre lo stesso nome base.
 
-### Logica di ordinamento
+**Sicurezza:** prima di scrivere vengono verificati duplicati, caratteri non validi, nomi riservati Windows e collisioni. La rinomina avviene in due fasi (nome temporaneo `.__flcqc_*` → nome definitivo) per gestire scambi e collisioni.
 
-Le acquisizioni vengono ordinate per:
-
-```text
-Acquisition Date + Acquisition Time
-```
-
-L'ordine temporale serve a ricostruire la sequenza reale di acquisizione.
-
-La proposta di rinomina, invece, mantiene volutamente la normale abitudine operativa:
-
-```text
-1
-2
-3
-4
-...
-```
-
-L'operatore può modificare liberamente ogni nome prima di applicarlo.
-
-### Informazioni mostrate
-
-Per ogni esposizione vengono visualizzati:
-
-- numero progressivo;
-- anteprima dell'immagine;
-- data e ora di acquisizione;
-- kVp;
-- mAs;
-- nome originale;
-- componenti disponibili: HDR, RAW, PP oppure DICOM;
-- nuovo nome proposto.
-
-kVp e mAs sono particolarmente utili per riconoscere:
-
-- acquisizioni ripetute;
-- esposizioni fuori sequenza;
-- misure effettuate con tempi o carichi differenti.
-
-### Gruppi Siemens
-
-Una esposizione Siemens viene trattata come un unico oggetto logico.
-
-La rinomina viene quindi applicata insieme a:
-
-```text
-1.hdr
-1
-1.pp
-```
-
-In questo modo i tre componenti della stessa acquisizione mantengono sempre lo stesso nome base.
-
-### Sicurezza della rinomina
-
-Prima di scrivere i nuovi nomi vengono verificati:
-
-- nomi duplicati;
-- caratteri non validi;
-- nomi riservati da Windows;
-- collisioni con file già presenti nella cartella.
-
-La rinomina viene eseguita in due fasi:
-
-1. ogni file viene spostato temporaneamente a un nome `.__flcqc_*`;
-2. i file temporanei vengono rinominati con il nome definitivo.
-
-Questo permette di gestire anche scambi di nome e collisioni intermedie senza sovrascrivere direttamente i file originali.
-
-> La rinomina diretta della cartella richiede un browser Chromium recente, ad esempio **Microsoft Edge** o **Google Chrome**, con supporto alla File System Access API.
+> Richiede un browser Chromium recente (Edge/Chrome) con File System Access API.
 
 ---
 
-## ROI
+## 🎯 Strumenti di puntamento — ROI
 
-Sono disponibili tre strumenti:
+Tre strumenti: **rettangolo**, **cerchio/ellisse**, **misura lineare**.
 
-- ROI rettangolare;
-- ROI circolare / ellittica;
-- misura lineare.
+Per ogni ROI: numero pixel, area (se noto il pixel spacing), media, deviazione standard, minimo, massimo, coefficiente di variazione.
 
-Per ciascuna ROI di misura vengono calcolati:
-
-- numero di pixel;
-- area, quando è noto il pixel spacing;
-- media;
-- deviazione standard;
-- minimo;
-- massimo;
-- coefficiente di variazione.
-
-### Gestione delle ROI
-
-Le ROI possono essere:
-
-- selezionate;
-- trascinate;
-- duplicate;
-- eliminate;
-- spostate con la tastiera.
-
-Scorciatoie:
+Le ROI si possono selezionare, trascinare, duplicare, eliminare e muovere da tastiera:
 
 ```text
 Frecce          spostamento di 1 pixel
@@ -223,446 +123,202 @@ Ctrl/Cmd + D    duplica ROI
 Canc/Backspace  elimina ROI
 ```
 
----
-
-## Template ROI
-
-Un set di ROI può essere:
-
-- salvato nel browser;
-- richiamato successivamente;
-- esportato in JSON;
-- importato da JSON.
-
-Il template conserva anche:
-
-- matrice di riferimento;
-- pixel spacing;
-- coordinate normalizzate.
-
-Questo consente di riadattare le ROI quando la matrice dell'immagine cambia.
+**Template ROI:** salvabili nel browser, richiamabili, esportabili/importabili in JSON. Conservano matrice di riferimento, pixel spacing e coordinate normalizzate, così le ROI si riadattano se la matrice cambia.
 
 ---
 
-# Analisi CQ
+## 🔬 Laboratorio di bordo — Analisi CQ
 
-Le funzioni di analisi sono raccolte in un unico pannello:
+Pannello unico: **Analisi CQ — scegli cosa devi fare**.
 
-```text
-Analisi CQ — scegli cosa devi fare
-```
+### 1. ROI sul range
+Le ROI correnti vengono applicate a tutte le immagini del range. Per ogni coppia `immagine × ROI`: area, n. pixel, media, SD, min, max, CV. Copia per Excel disponibile (`Copia 1–6`, `Copia 7–8`, `Copia tutto`, formato TSV).
 
-La versione attuale contiene tre gruppi principali.
+### 2. Non uniformità DR
+Calcolo guidato su margine, lato ROI e livelli di esposizione (di norma **2,5** e **10 mGy**). Indici: **NULS, NUGS, NULSNR, NUGSNR**.
+Sulla prima immagine di uniformità viene eseguita anche la **ricerca bad pixel** (immagine, media, SD, soglia, min, max, conteggio, coordinate).
 
----
-
-## 1. ROI sul range
-
-Le ROI correnti vengono applicate automaticamente a tutte le immagini comprese nel range selezionato.
-
-Per ogni coppia:
+### 3. Ghost / immagini latenti
+Servono 2 ROI sull'immagine irradiata (piombo / fuori piombo); le stesse coordinate valgono sull'immagine buia. Vengono misurate le quattro combinazioni:
 
 ```text
-immagine × ROI
-```
-
-vengono registrati:
-
-- area;
-- numero di pixel;
-- media;
-- deviazione standard;
-- minimo;
-- massimo;
-- coefficiente di variazione.
-
-I risultati vengono mostrati in tabella.
-
-### Copia per Excel
-
-Per ciascuna ROI sono disponibili:
-
-```text
-Copia 1–6 per Excel
-Copia 7–8 per Excel
-Copia tutto
-```
-
-I dati vengono copiati in formato TSV, quindi possono essere incollati direttamente in Excel.
-
----
-
-## 2. Non uniformità DR
-
-Il modulo esegue il calcolo guidato della non uniformità sulle immagini selezionate.
-
-Impostazioni disponibili:
-
-- margine della zona analizzata;
-- lato delle ROI;
-- immagini da associare ai livelli di esposizione.
-
-La procedura propone normalmente:
-
-```text
-2,5 mGy
-10 mGy
-```
-
-e calcola gli indici:
-
-- NULS;
-- NUGS;
-- NULSNR;
-- NUGSNR.
-
-### Bad pixel
-
-Sulla prima immagine utilizzata per l'analisi di uniformità viene eseguita anche la ricerca dei bad pixel.
-
-Vengono conservati:
-
-- immagine analizzata;
-- media;
-- deviazione standard;
-- soglia;
-- minimo;
-- massimo;
-- numero di bad pixel;
-- coordinate dei pixel individuati.
-
-I risultati dell'uniformità possono essere copiati per Excel.
-
----
-
-## 3. Ghost / immagini latenti
-
-Per il calcolo del ghost sono necessarie due ROI definite sull'immagine irradiata:
-
-```text
-ROI 1 → zona con piombo
-ROI 2 → zona fuori dal piombo
-```
-
-Le stesse coordinate vengono quindi utilizzate anche sull'immagine buia.
-
-L'utente sceglie:
-
-- immagine irradiata;
-- immagine buia / minimo carico.
-
-Il programma misura automaticamente le quattro combinazioni:
-
-```text
-ROI1immIRR
-ROI2immBuio
-ROI3immIRR
-ROI4immBuio
-```
-
-Per ciascuna vengono riportati:
-
-- numero immagine;
-- area;
-- media;
-- deviazione standard;
-- minimo;
-- massimo.
-
-È disponibile il comando:
-
-```text
-Copia per Excel
+ROI1immIRR   ROI2immBuio   ROI3immIRR   ROI4immBuio
 ```
 
 ---
 
-# Dati della sessione
+## 🧭 Registro di volo — FLC-QC-SESSION
 
-La v19 introduce una struttura dati unica pensata come base del futuro generatore di report.
-
-Lo schema interno è identificato come:
-
-```text
-FLC-QC-SESSION
-```
-
-e raccoglie progressivamente il lavoro eseguito durante la sessione.
-
-Struttura concettuale:
+Struttura dati unica che raccoglie progressivamente il lavoro della sessione (schema `FLC-QC-SESSION`):
 
 ```text
 sessione
-├── sorgente
-│   ├── tipo
-│   ├── range
-│   ├── matrice
-│   └── pixel spacing
-│
-├── acquisizioni
-│   ├── numero immagine
-│   ├── file
-│   ├── HDR
-│   ├── data acquisizione
-│   ├── ora acquisizione
-│   └── tecnica
-│       ├── kVp
-│       ├── mAs
-│       ├── mA
-│       └── ms
-│
-├── ROI
-│   ├── nome
-│   ├── tipo
-│   └── geometria
-│
-├── misure
-│   ├── ROI sul range
-│   ├── uniformità
-│   ├── bad pixel
-│   └── ghost
-│
+├── sorgente        (tipo, range, matrice, pixel spacing)
+├── acquisizioni    (n. immagine, file, HDR, data/ora, tecnica: kVp/mAs/mA/ms)
+├── ROI             (nome, tipo, geometria)
+├── misure          (ROI sul range · uniformità · bad pixel · ghost)
 └── esportazioni
 ```
 
-La sessione viene aggiornata automaticamente quando vengono eseguite le analisi.
-
-Caricando una nuova serie viene inizializzata una nuova sessione, evitando di mescolare i risultati di controlli differenti.
+Caricando una nuova serie parte una nuova sessione, senza mescolare controlli diversi.
 
 ---
 
-## Esportazione dei dati
+## 📡 Aggancio orbitale — Import da Excel / JSON
 
-Nel pannello **Dati sessione / report** sono disponibili due comandi.
+> **Novità della rotta attuale.** Nella scheda acquisizione trovi la zona **"Precompila da controllo precedente"**: trascina un vecchio **`.xlsx`** o un **`.json`** salvato in precedenza.
 
-### Copia tutte le misure per Excel
+### Import Excel (.xlsx)
 
-Genera un unico blocco TSV contenente, quando presenti:
+Il lettore ZIP + DEFLATE è **nativo e offline** (usa `DecompressionStream('deflate-raw')`), quindi **nessuna libreria esterna**. Legge i fogli **`Report`** e **`Inserimento dati`** e **popola tutti i campi**, comprese le misure che servono per il calcolo del CQ:
 
-```text
-ROI SUL RANGE
-NON UNIFORMITA
-BAD PIXEL
-GHOST
-```
+- **Identificativi:** azienda, sala, unità, ditta/modello, serie tubo, operatore, software, note, data controllo.
+- **Setup:** tipo DR, protocollo, griglia, filtrazione, DFR, kV, distanze (fuori potter / lettino / stativo), tipo curva PV ed EI (LIN/LOG).
+- **STP (6 punti):** mAs, Karia, `<PV>`, SD, EI (dal foglio Report; fallback su Inserimento dati).
+- **Ripetibilità EI:** `<PV>`, EI, Karia, mAs.
+- **Uniformità:** NULS/NUGS a 2,5 e 10 µGy (in %).
+- **Bad pixel** e **artefatti**.
+- **Basso contrasto (TOR CDR):** Karia, mAs, oggetti visibili.
+- **Ghost:** medie ROI2/ROI3/ROI4, più mAs/kV di ghost e minimo carico.
 
-Il testo può essere incollato direttamente in Excel.
+Al termine i valori condivisi (kV/Karia/mAs allo stesso µGy) vengono riconciliati e il report ricalcola tutte le grandezze derivate.
 
-### Esporta dati JSON
-
-Genera:
-
-```text
-FLC_QC_sessione.json
-```
-
-contenente l'intera struttura dati della sessione.
-
-Questo JSON è pensato anche come interfaccia fra:
-
-```text
-analisi delle immagini
-        ↓
-dati strutturati
-        ↓
-generazione del report
-```
+> Per l'import `.xlsx` serve un browser Chromium recente (Edge/Chrome). Con altri browser resta disponibile l'import **JSON**.
 
 ---
 
-## Flusso di lavoro consigliato
+## 🛸 Confronto di rotta — CQ costanza vs accettazione
 
-### 1. Aprire la cartella
+Poiché l'import popola **tutti** i campi, ogni Excel importato diventa un **CQ completo e confrontabile**.
 
-Usare:
+Flusso consigliato:
 
-```text
-▣ Carica cartella / range
+```
+   Import Excel  ─▶  campi popolati + CQ calcolato  ─▶  Esporta dati JSON  ─▶  Confronto controlli
 ```
 
-oppure, quando serve prima sistemare i nomi:
+1. Importa l'Excel del controllo precedente → tutti i campi si riempiono.
+2. **Esporta dati JSON** per ottenere il file di quel controllo.
+3. Apri **Confronto controlli** (accettazione vs costanza), oppure usa **"il controllo corrente come B"**.
 
-```text
-✎ Rinomina immagini
-```
-
-### 2. Verificare l'ordine
-
-Controllare:
-
-- Acquisition Date/Time;
-- kVp;
-- mAs;
-- anteprima.
-
-Eventuali ripetizioni diventano così immediatamente riconoscibili.
-
-### 3. Selezionare il range
-
-Impostare:
-
-```text
-Da slice
-A slice
-```
-
-e premere **Applica range**.
-
-### 4. Preparare le ROI
-
-Disegnare le ROI oppure richiamare un template precedentemente salvato.
-
-### 5. Eseguire l'analisi
-
-Dal pannello **Analisi CQ** scegliere:
-
-- ROI sul range;
-- Non uniformità DR;
-- Ghost.
-
-### 6. Esportare
-
-A seconda del flusso di lavoro:
-
-- copiare i singoli blocchi in Excel;
-- copiare tutte le misure;
-- esportare la sessione JSON.
+Il confronto mostra le **variazioni %** delle grandezze chiave (R² PV, coefficienti a/b e c/d, NULS/NUGS, lag, `<K>` medio) ed evidenzia gli scostamenti oltre **±10%**.
 
 ---
 
-## Privacy e funzionamento locale
+## 📈 Rotta di conversione — PV teorico e scelta della curva
 
-Il programma è un singolo file HTML.
-
-Non richiede:
-
-- server;
-- database;
-- installazione;
-- upload delle immagini;
-- connessione a servizi esterni per l'analisi.
-
-I file radiologici vengono letti localmente dal browser.
-
-Questo approccio è particolarmente utile per dati tecnici o sanitari che non devono essere inviati a servizi remoti.
-
----
-
-## Avvio
-
-Non è necessaria una procedura di installazione.
-
-1. scaricare il file HTML;
-2. aprirlo con un browser moderno;
-3. caricare una singola immagine o una cartella.
-
-Per la funzione di **rinomina diretta dei file** utilizzare preferibilmente:
-
-- Microsoft Edge;
-- Google Chrome.
-
----
-
-## Struttura del progetto
-
-Attualmente il progetto è volutamente distribuito come **single-file application**:
+La funzione di risposta STP viene modellata con una regressione, la cui **ascissa dipende dal tipo di curva**:
 
 ```text
-SIEMENS_TLC_CalculatorHDR_v19_DatiReport_Excel.html
+LIN :  <PV> = a · Karia      + b
+LOG :  <PV> = a · ln(Karia)  + b        (definito solo per Karia > 0)
 ```
 
-HTML, CSS, JavaScript e risorse dell'interfaccia sono incorporati nello stesso file.
+Il **PV teorico** di ogni riga usa esattamente la stessa trasformazione del fit, quindi tabella, coefficienti e grafico restano coerenti. Se un Karia non è valido per la curva scelta (es. `≤ 0` in LOG), la cella mostra `—` invece di un numero anomalo. Analogo trattamento robusto per la curva EI (Karia calcolato da EI).
 
-Vantaggi:
+### 🧑‍🚀 Copilota della curva
 
-- distribuzione semplice;
-- nessuna dipendenza da installare;
-- utilizzo offline;
-- facile archiviazione insieme alla documentazione CQ.
+Sotto la nota di linearità compare, quando serve, un **avviso**: se l'altra curva (LIN ↔ LOG) darebbe un fit migliore, lo strumento te lo segnala.
+
+- Appare solo se l'alternativa ha **R² maggiore** e la curva attuale è sotto soglia (**R² < 0,98**) **oppure** il guadagno è rilevante (**≥ 0,5 punti** di R²).
+- Se l'alternativa supera 0,98 dice "sarebbe conforme"; altrimenti dice solo "con R² migliore", senza promettere conformità.
+- Nessun avviso se la curva scelta è già ottima: niente rumore inutile.
 
 ---
 
-## Stato del progetto
+## 🗄 Diario di bordo — storico e andamento
 
-### Implementato
+- **🗄 Archivia:** salva il controllo corrente nello storico locale (browser).
+- **Andamento nel tempo:** sparkline per R² PV/EI, NULS/NUGS, lag ghost, `<K>` medio, bad pixel.
 
-- [x] Visualizzazione Siemens FLC
-- [x] Visualizzazione DICOM non compresso
-- [x] Lettura automatica matrice e pixel spacing quando disponibili
-- [x] Lettura Acquisition Date/Time
-- [x] Lettura kVp e mAs
-- [x] Anteprima delle acquisizioni
-- [x] Ordinamento temporale
-- [x] Rinomina guidata `1, 2, 3…`
-- [x] Gestione coordinata HDR + RAW + PP
-- [x] ROI rettangolari e circolari
-- [x] Template ROI
-- [x] Analisi ROI sul range
-- [x] Copia dati per Excel
-- [x] Non uniformità DR
-- [x] Ricerca bad pixel
-- [x] Ghost / immagini latenti
-- [x] Struttura dati `FLC-QC-SESSION`
-- [x] Export JSON della sessione
+---
 
-### Roadmap
+## 📤 Esportazioni
 
-- [ ] Generazione automatica del report CQ
-- [ ] Inserimento dei dati identificativi dell'apparecchiatura nel report
-- [ ] Riepilogo automatico delle acquisizioni utilizzate
-- [ ] Tabelle e risultati formattati automaticamente
-- [ ] Esportazione del report in formato stampabile
+Nel pannello **Dati sessione / report**:
+
+- **📄 Genera report** — foglio compilato con calcoli, grafici ed esiti.
+- **Copia tutte le misure per Excel** — blocco TSV unico (ROI sul range, non uniformità, bad pixel, ghost), incollabile in Excel.
+- **Esporta dati JSON** — `FLC_QC_...json` con l'intera struttura: interfaccia fra analisi immagini → dati strutturati → report.
+- **Salva/Carica dati inseriti** — bundle JSON di tutte e tre le pagine, ricaricabile su qualsiasi PC.
+- **Salva report come HTML** — report autonomo e stampabile.
+- **CLEAN UP** — azzera scheda, misure, ROI, storico e report corrente (le preferenze di tema/zoom restano). Operazione non reversibile.
+
+---
+
+## 🧯 Sicurezza della capsula — privacy e funzionamento locale
+
+Un singolo file HTML. Niente server, database, installazione, upload o servizi esterni per l'analisi. Ideale per dati tecnici o sanitari che non devono lasciare la postazione.
+
+---
+
+## 🕹 Avvio
+
+1. scarica il file HTML;
+2. aprilo con un browser moderno;
+3. carica una singola immagine o una cartella.
+
+Per **rinomina file** e **import Excel** usa preferibilmente **Microsoft Edge** o **Google Chrome**.
+
+---
+
+## 🛰 Plancia di stato
+
+### A bordo (implementato)
+
+- [x] Visualizzazione Siemens FLC e DICOM non compresso
+- [x] Lettura automatica matrice, pixel spacing, data/ora, kVp, mAs
+- [x] Anteprime e ordinamento temporale
+- [x] Rinomina guidata `1, 2, 3…` con gestione HDR + RAW + PP
+- [x] ROI rettangolari/circolari + template ROI
+- [x] Analisi ROI sul range · Non uniformità DR · Bad pixel · Ghost
+- [x] Struttura dati `FLC-QC-SESSION` + export JSON
+- [x] Copia dati per Excel (TSV)
+- [x] **Import Excel completo (tutti i campi, incluse le misure)**
+- [x] **CQ confrontabile via JSON (accettazione vs costanza)**
+- [x] **PV teorico coerente LIN/LOG + robustezza sui valori non validi**
+- [x] **Avviso di scelta curva (suggerisce LIN/LOG in base a R²)**
+- [x] Report compilabile con calcoli, grafici, esiti e firme
+- [x] Storico controlli e andamento nel tempo
+
+### Prossime rotte (roadmap)
+
+- [ ] Riepilogo automatico delle acquisizioni utilizzate nel report
+- [ ] Esportazione report in ulteriori formati stampabili
 - [ ] Eventuale supporto ai DICOM compressi
 - [ ] Ulteriore semplificazione del flusso guidato
 
 ---
 
-## Note sul formato Siemens FLC
+## 📎 Note sul formato Siemens FLC
 
-La lettura di alcuni parametri tecnici Siemens FLC utilizza informazioni presenti nell'header proprietario `FLC_V7`.
-
-Il parser applica controlli di plausibilità sui valori ricavati, in particolare per:
-
-- kVp;
-- tempo di esposizione;
-- mAs;
-- corrente ricostruita.
-
-Poiché il formato è proprietario, nuovi layout o revisioni dell'header Siemens potrebbero richiedere ulteriori verifiche.
-
-Per questo motivo i parametri mostrati dal programma devono essere sempre confrontati con il contesto dell'acquisizione quando vengono utilizzati per attività di controllo qualità.
+Alcuni parametri tecnici derivano dall'header proprietario `FLC_V7`, con controlli di plausibilità su kVp, tempo di esposizione, mAs e corrente ricostruita. Essendo un formato proprietario, nuovi layout dell'header potrebbero richiedere verifiche: **confronta sempre i parametri mostrati con il contesto dell'acquisizione**.
 
 ---
 
-## Uso previsto
+## ⚠️ Uso previsto
 
-Questo software è uno strumento di supporto al controllo di qualità e all'organizzazione delle misure.
-
-Non sostituisce:
+Strumento di **supporto** al controllo di qualità e all'organizzazione delle misure. Non sostituisce:
 
 - le procedure aziendali;
 - i protocolli di controllo qualità applicabili;
 - la valutazione professionale del fisico medico;
-- la verifica dei risultati prima della loro registrazione ufficiale.
+- la verifica dei risultati prima della registrazione ufficiale.
 
 ---
 
-## Sviluppo
+## 🧩 Struttura del progetto
 
-Il progetto è in evoluzione.
-
-La v19 segna il passaggio da un semplice viewer/strumento di misura a una struttura più completa:
+Single-file application:
 
 ```text
-ACQUISIZIONE
-     ↓
-VERIFICA E RINOMINA
-     ↓
-ANALISI
-     ↓
-DATI STRUTTURATI
-     ↓
-REPORT
+SIEMENS_TLC_CalculatorHDR_v19_DatiReport_Excel.html
 ```
 
-Il prossimo obiettivo è utilizzare direttamente `FLC-QC-SESSION` per produrre il report finale, evitando di ricalcolare o ricostruire manualmente i risultati già ottenuti durante la sessione.
+HTML, CSS e JavaScript sono incorporati nello stesso file. Vantaggi: distribuzione semplice, nessuna dipendenza, uso offline, archiviazione facile insieme alla documentazione CQ.
+
+```
+        ·  ·   ✦   ·        ·      ✦        ·   ·      ·
+   ·        Buona missione, e che i tuoi R² siano sempre > 0,98.  ✦
+        ·        ·     ·        ✦      ·        ·         ·   ·
+```
