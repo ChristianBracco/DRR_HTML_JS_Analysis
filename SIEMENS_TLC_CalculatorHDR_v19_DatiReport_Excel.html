@@ -43,6 +43,27 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.32;ba
 .guideSvg{width:100%;height:auto;display:block;border-radius:22px;box-shadow:0 25px 90px #000}
 .guideHot{cursor:pointer}.guideHot:hover .hotbox{stroke:#fff;stroke-width:3}
 .guideHint{font-size:12px;color:#91a9c2;text-align:center;margin:9px}
+/* ---- Guida testuale "para para" dentro la modale ---- */
+.guideDoc{max-width:920px;margin:22px auto 8px;padding:20px 24px;background:linear-gradient(160deg,rgba(12,26,46,.92),rgba(9,16,32,.94));border:1px solid rgba(99,230,255,.28);border-radius:18px;color:#cfe0f2;font-size:13.5px;line-height:1.62;box-shadow:0 18px 60px rgba(0,0,0,.5)}
+.guideDoc h2{font-size:19px;color:#8fe9ff;margin:26px 0 8px;letter-spacing:.3px}
+.guideDoc h2:first-child{margin-top:0}
+.guideDoc h3{font-size:15px;color:#ffe6a3;margin:18px 0 6px}
+.guideDoc p{margin:8px 0}
+.guideDoc ul,.guideDoc ol{margin:8px 0 8px 4px;padding-left:20px}
+.guideDoc li{margin:4px 0}
+.guideDoc b{color:#eaf4ff}
+.guideDoc code,.guideDoc pre{font-family:'JetBrains Mono',Consolas,monospace;font-size:12px}
+.guideDoc code{background:rgba(99,230,255,.10);border:1px solid rgba(99,230,255,.18);border-radius:5px;padding:1px 5px;color:#bdf3ff}
+.guideDoc pre{background:rgba(3,9,20,.75);border:1px solid rgba(99,230,255,.16);border-radius:10px;padding:12px 14px;overflow:auto;color:#a9d8ee;margin:10px 0;white-space:pre;line-height:1.4}
+.guideDoc .gdHint{background:rgba(255,209,102,.10);border:1px solid rgba(255,209,102,.35);border-radius:8px;padding:8px 12px;color:#ffe6a3;margin:10px 0;font-size:12.5px}
+.guideDoc .gdSep{height:1px;background:linear-gradient(90deg,transparent,rgba(99,230,255,.35),transparent);border:0;margin:22px 0}
+.guideDoc .gdStars{text-align:center;color:#7f97b4;font-size:12px;margin-top:18px;letter-spacing:2px}
+.guideDoc .gdLead{color:#9fb6d0;font-style:italic}
+body.light .guideDoc{background:linear-gradient(160deg,#f4f9ff,#e8f1fb);border-color:#bcd6ee;color:#213a54}
+body.light .guideDoc h2{color:#0d6ea8}body.light .guideDoc h3{color:#b5730a}
+body.light .guideDoc b{color:#12233a}
+body.light .guideDoc code{background:#e2eefb;border-color:#c2d8ee;color:#0d4f78}
+body.light .guideDoc pre{background:#eef4fb;border-color:#c2d8ee;color:#274866}
 .guideFlash{animation:guidePulse 1s ease 3}
 @keyframes guidePulse{0%,100%{box-shadow:inherit}50%{box-shadow:0 0 0 5px rgba(255,209,102,.7),0 0 35px rgba(73,215,255,.75)}}
 
@@ -710,6 +731,165 @@ body.light .dropTitle,body.light .dropSub,body.light #drop{color:#26384f}
  title="Clicca per ingrandire/ridurre">
 </div>
 <div class="guideHint">Poster incorporato nel file HTML: nessun file esterno e nessuna connessione richiesta. Clicca sul poster per ingrandirlo.</div>
+
+<div class="guideDoc">
+ <h2>🛰 SIEMENS FLC QC Viewer — Console di Missione CQ</h2>
+ <p class="gdLead">Rotta attuale: v19 — Analisi CQ + Dati Report + Import Excel completo.<br>
+ Ambiente operativo: singolo file HTML, tutto a bordo, nessun collegamento a terra.</p>
+ <p>Benvenuto a bordo. Questo strumento è la <b>console di controllo qualità</b> per i rivelatori digitali <b>Siemens FLC</b>. Immagini, ROI, analisi, report e confronti viaggiano tutti dentro un unico file HTML autocontenuto: nessun server, nessun database, nessun upload. I dati radiologici restano nel tuo browser, come in una capsula sigillata.</p>
+
+ <hr class="gdSep">
+
+ <h2>🌌 Missione</h2>
+ <p>Rendere il controllo di qualità dei sistemi DR <b>semplice, riproducibile e tracciabile</b>, dal primo lancio (caricamento immagini) fino al rientro (report firmato).</p>
+ <p>Rotta di volo:</p>
+ <pre>ACQUISIZIONE ─▶ VERIFICA/RINOMINA ─▶ ANALISI ─▶ DATI STRUTTURATI ─▶ REPORT
+     Step 1          Step 1          Step 2     (FLC-QC-SESSION)     Step 3</pre>
+ <p>Interfaccia pensata anche per operatori non esperti:</p>
+ <ol>
+  <li>carichi una singola immagine o una cartella;</li>
+  <li>verifichi ed eventualmente rinomini le acquisizioni;</li>
+  <li>disegni o richiami le ROI;</li>
+  <li>esegui le analisi CQ;</li>
+  <li><b>precompili tutto da un vecchio Excel o JSON</b>;</li>
+  <li>copi i risultati in Excel oppure esporti la sessione in JSON;</li>
+  <li>generi il report finale.</li>
+ </ol>
+
+ <hr class="gdSep">
+
+ <h2>🚀 Ponte di comando — le tre postazioni</h2>
+ <p>L'app è organizzata in <b>3 step</b> (wizard) con una <b>dashboard di missione</b> che mostra, a colpo d'occhio, quanto sei vicino al report pronto.</p>
+ <ul>
+  <li><b>Step 1 — Scheda acquisizione:</b> dati identificativi, condizioni di lavoro, tabelle STP / EI / ripetibilità / TOR CDR / ghost.</li>
+  <li><b>Step 2 — Analisi immagini:</b> ROI sul range, non uniformità DR, bad pixel, ghost.</li>
+  <li><b>Step 3 — Report:</b> foglio compilabile con calcoli automatici, grafici, esiti e firme.</li>
+ </ul>
+ <p>La <b>🛰 Controllo missione</b> calcola una percentuale di completamento e ti dice cosa manca prima del report.</p>
+
+ <hr class="gdSep">
+
+ <h2>🛰 Sensori di bordo — visualizzazione</h2>
+ <h3>Siemens FLC</h3>
+ <p>Gestisce le acquisizioni composte da <code>file.hdr</code>, <code>file</code> (raster senza estensione) e <code>file.pp</code>. Preset per le principali matrici Siemens: MAX mini 1920×1520, MAX wi-D 2350×2866, MAX static 2868×2874, MAX dynamic RAD 2840×2874, MAX dynamic FLU/DFR, FLC storage 3072×2657.</p>
+ <p>Dall'header proprietario <code>FLC_V7</code>, quando disponibili, ricava automaticamente matrice, pixel spacing, data/ora, kVp, mAs, corrente tubo e tempo di esposizione (con controlli di plausibilità).</p>
+ <h3>DICOM</h3>
+ <p>Riconosce anche file DICOM, compresi quelli senza estensione <code>.dcm</code> se presente il preambolo. Transfer syntax <b>non compresse</b>: Implicit VR Little Endian, Explicit VR Little Endian, Explicit VR Big Endian. Per i mAs, in ordine: Exposure <code>(0018,1152)</code> → Exposure in µAs <code>(0018,1153)</code> → calcolo <code>mA × ms / 1000</code>.</p>
+ <div class="gdHint">Limite: i DICOM compressi (JPEG, JPEG-LS, JPEG 2000, RLE) non sono ancora decodificati.</div>
+
+ <hr class="gdSep">
+
+ <h2>🔧 Manovre di allineamento — rinomina guidata</h2>
+ <p>Il pulsante <b>✎ Rinomina immagini</b> apre una cartella e costruisce la lista ordinata delle esposizioni.</p>
+ <ul>
+  <li><b>Ordinamento:</b> per <code>Acquisition Date + Acquisition Time</code>, per ricostruire la sequenza reale.</li>
+  <li><b>Proposta nomi:</b> <code>1, 2, 3, …</code> (abitudine operativa), tutti modificabili.</li>
+  <li><b>Info per esposizione:</b> progressivo, anteprima, data/ora, kVp, mAs, nome originale, componenti (HDR/RAW/PP o DICOM), nuovo nome.</li>
+ </ul>
+ <p>Una esposizione Siemens è un <b>unico oggetto logico</b>: <code>1.hdr</code>, <code>1</code>, <code>1.pp</code> mantengono sempre lo stesso nome base. Prima di scrivere vengono verificati duplicati, caratteri non validi, nomi riservati Windows e collisioni. La rinomina avviene in due fasi (nome temporaneo <code>.__flcqc_*</code> → nome definitivo).</p>
+ <div class="gdHint">Richiede un browser Chromium recente (Edge/Chrome) con File System Access API.</div>
+
+ <hr class="gdSep">
+
+ <h2>🎯 Strumenti di puntamento — ROI</h2>
+ <p>Tre strumenti: <b>rettangolo</b>, <b>cerchio/ellisse</b>, <b>misura lineare</b>. Per ogni ROI: numero pixel, area (se noto il pixel spacing), media, deviazione standard, minimo, massimo, coefficiente di variazione.</p>
+ <p>Le ROI si possono selezionare, trascinare, duplicare, eliminare e muovere da tastiera:</p>
+ <pre>Frecce          spostamento di 1 pixel
+Shift + Frecce  spostamento di 10 pixel
+Ctrl/Cmd + D    duplica ROI
+Canc/Backspace  elimina ROI</pre>
+ <p><b>Template ROI:</b> salvabili nel browser, richiamabili, esportabili/importabili in JSON. Conservano matrice di riferimento, pixel spacing e coordinate normalizzate, così le ROI si riadattano se la matrice cambia.</p>
+
+ <hr class="gdSep">
+
+ <h2>🔬 Laboratorio di bordo — Analisi CQ</h2>
+ <h3>1. ROI sul range</h3>
+ <p>Le ROI correnti vengono applicate a tutte le immagini del range. Per ogni coppia <code>immagine × ROI</code>: area, n. pixel, media, SD, min, max, CV. Copia per Excel disponibile (<code>Copia 1–6</code>, <code>Copia 7–8</code>, <code>Copia tutto</code>, formato TSV).</p>
+ <h3>2. Non uniformità DR</h3>
+ <p>Calcolo guidato su margine, lato ROI e livelli di esposizione (di norma <b>2,5</b> e <b>10 mGy</b>). Indici: <b>NULS, NUGS, NULSNR, NUGSNR</b>. Sulla prima immagine di uniformità viene eseguita anche la <b>ricerca bad pixel</b> (immagine, media, SD, soglia, min, max, conteggio, coordinate).</p>
+ <h3>3. Ghost / immagini latenti</h3>
+ <p>Servono 2 ROI sull'immagine irradiata (piombo / fuori piombo); le stesse coordinate valgono sull'immagine buia. Vengono misurate le quattro combinazioni: <code>ROI1immIRR</code>, <code>ROI2immBuio</code>, <code>ROI3immIRR</code>, <code>ROI4immBuio</code>.</p>
+
+ <hr class="gdSep">
+
+ <h2>🧭 Registro di volo — FLC-QC-SESSION</h2>
+ <p>Struttura dati unica che raccoglie progressivamente il lavoro della sessione:</p>
+ <pre>sessione
+├── sorgente        (tipo, range, matrice, pixel spacing)
+├── acquisizioni    (n. immagine, file, HDR, data/ora, tecnica: kVp/mAs/mA/ms)
+├── ROI             (nome, tipo, geometria)
+├── misure          (ROI sul range · uniformità · bad pixel · ghost)
+└── esportazioni</pre>
+ <p>Caricando una nuova serie parte una nuova sessione, senza mescolare controlli diversi.</p>
+
+ <hr class="gdSep">
+
+ <h2>📡 Aggancio orbitale — Import da Excel / JSON</h2>
+ <p>Nella scheda acquisizione trovi la zona <b>"Precompila da controllo precedente"</b>: trascina un vecchio <code>.xlsx</code> o un <code>.json</code> salvato in precedenza.</p>
+ <p>Il lettore ZIP + DEFLATE è <b>nativo e offline</b> (usa <code>DecompressionStream('deflate-raw')</code>), quindi nessuna libreria esterna. Legge i fogli <b>Report</b> e <b>Inserimento dati</b> e <b>popola tutti i campi</b>, comprese le misure che servono per il calcolo del CQ:</p>
+ <ul>
+  <li><b>Identificativi:</b> azienda, sala, unità, ditta/modello, serie tubo, operatore, software, note, data controllo.</li>
+  <li><b>Setup:</b> tipo DR, protocollo, griglia, filtrazione, DFR, kV, distanze (fuori potter / lettino / stativo), tipo curva PV ed EI (LIN/LOG).</li>
+  <li><b>STP (6 punti):</b> mAs, Karia, &lt;PV&gt;, SD, EI (dal foglio Report; fallback su Inserimento dati).</li>
+  <li><b>Ripetibilità EI:</b> &lt;PV&gt;, EI, Karia, mAs.</li>
+  <li><b>Uniformità:</b> NULS/NUGS a 2,5 e 10 µGy (in %).</li>
+  <li><b>Bad pixel</b> e <b>artefatti</b>.</li>
+  <li><b>Basso contrasto (TOR CDR):</b> Karia, mAs, oggetti visibili.</li>
+  <li><b>Ghost:</b> medie ROI2/ROI3/ROI4, più mAs/kV di ghost e minimo carico.</li>
+ </ul>
+ <p>Al termine i valori condivisi (kV/Karia/mAs allo stesso µGy) vengono riconciliati e il report ricalcola tutte le grandezze derivate.</p>
+ <div class="gdHint">Per l'import <code>.xlsx</code> serve un browser Chromium recente (Edge/Chrome). Con altri browser resta disponibile l'import JSON.</div>
+
+ <hr class="gdSep">
+
+ <h2>🛸 Confronto di rotta — CQ costanza vs accettazione</h2>
+ <p>Poiché l'import popola <b>tutti</b> i campi, ogni Excel importato diventa un <b>CQ completo e confrontabile</b>.</p>
+ <pre>Import Excel ─▶ campi popolati + CQ calcolato ─▶ Esporta dati JSON ─▶ Confronto controlli</pre>
+ <ol>
+  <li>Importa l'Excel del controllo precedente → tutti i campi si riempiono.</li>
+  <li><b>Esporta dati JSON</b> per ottenere il file di quel controllo.</li>
+  <li>Apri <b>Confronto controlli</b> (accettazione vs costanza), oppure usa <b>"il controllo corrente come B"</b>.</li>
+ </ol>
+ <p>Il confronto mostra le <b>variazioni %</b> delle grandezze chiave (R² PV, coefficienti a/b e c/d, NULS/NUGS, lag, &lt;K&gt; medio) ed evidenzia gli scostamenti oltre <b>±10%</b>.</p>
+
+ <hr class="gdSep">
+
+ <h2>📈 Rotta di conversione — PV teorico e scelta della curva</h2>
+ <p>La funzione di risposta STP viene modellata con una regressione, la cui <b>ascissa dipende dal tipo di curva</b>:</p>
+ <pre>LIN :  &lt;PV&gt; = a · Karia      + b
+LOG :  &lt;PV&gt; = a · ln(Karia)  + b        (definito solo per Karia &gt; 0)</pre>
+ <p>Il <b>PV teorico</b> di ogni riga usa esattamente la stessa trasformazione del fit, quindi tabella, coefficienti e grafico restano coerenti. Se un Karia non è valido per la curva scelta (es. <code>≤ 0</code> in LOG), la cella mostra <code>—</code> invece di un numero anomalo. Trattamento robusto analogo per la curva EI (Karia calcolato da EI).</p>
+ <h3>🧑‍🚀 Copilota della curva</h3>
+ <p>Sotto la nota di linearità compare, quando serve, un <b>avviso</b>: se l'altra curva (LIN ↔ LOG) darebbe un fit migliore, lo strumento te lo segnala.</p>
+ <ul>
+  <li>Appare solo se l'alternativa ha <b>R² maggiore</b> e la curva attuale è sotto soglia (<b>R² &lt; 0,98</b>) <b>oppure</b> il guadagno è rilevante (<b>≥ 0,5 punti</b> di R²).</li>
+  <li>Se l'alternativa supera 0,98 dice "sarebbe conforme"; altrimenti dice solo "con R² migliore", senza promettere conformità.</li>
+  <li>Nessun avviso se la curva scelta è già ottima: niente rumore inutile.</li>
+ </ul>
+
+ <hr class="gdSep">
+
+ <h2>📤 Esportazioni e diario di bordo</h2>
+ <ul>
+  <li><b>🗄 Archivia:</b> salva il controllo corrente nello storico locale; <b>Andamento nel tempo</b> con sparkline per R² PV/EI, NULS/NUGS, lag ghost, &lt;K&gt; medio, bad pixel.</li>
+  <li><b>📄 Genera report</b> — foglio compilato con calcoli, grafici ed esiti.</li>
+  <li><b>Copia tutte le misure per Excel</b> — blocco TSV unico (ROI sul range, non uniformità, bad pixel, ghost).</li>
+  <li><b>Esporta dati JSON</b> — l'intera struttura della sessione, interfaccia fra analisi → dati strutturati → report.</li>
+  <li><b>Salva/Carica dati inseriti</b> — bundle JSON di tutte e tre le pagine, ricaricabile su qualsiasi PC.</li>
+  <li><b>Salva report come HTML</b> — report autonomo e stampabile.</li>
+  <li><b>CLEAN UP</b> — azzera scheda, misure, ROI, storico e report corrente (tema/zoom restano). Operazione non reversibile.</li>
+ </ul>
+
+ <hr class="gdSep">
+
+ <h2>🧯 Sicurezza della capsula — privacy e funzionamento locale</h2>
+ <p>Un singolo file HTML. Niente server, database, installazione, upload o servizi esterni per l'analisi. Ideale per dati tecnici o sanitari che non devono lasciare la postazione.</p>
+
+ <h2>⚠️ Uso previsto</h2>
+ <p>Strumento di <b>supporto</b> al controllo di qualità e all'organizzazione delle misure. Non sostituisce le procedure aziendali, i protocolli di CQ applicabili, la valutazione professionale del fisico medico, né la verifica dei risultati prima della registrazione ufficiale.</p>
+
+ <div class="gdStars">·  ·  ✦  ·  Buona missione, e che i tuoi R² siano sempre &gt; 0,98.  ✦  ·  ·</div>
+</div>
 </div></div>
 <script>
 'use strict';
